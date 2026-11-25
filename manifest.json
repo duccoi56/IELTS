@@ -1,7 +1,7 @@
 {
   "name": "IELTS Mastery Studio — Hệ thống Luyện thi IELTS Toàn diện",
   "short_name": "IELTS Mastery",
-  "description": "Ứng dụng tự học IELTS All-in-One từ Band 5.0 lên 8.5+ (260 Collocations, 15 chuyên đề Ngữ pháp / 150 bài tập, 14 Reading, 14 Listening, 22 Writing, 12 Speaking).",
+  "description": "Ứng dụng tự học IELTS All-in-One từ Band 5.0 lên 8.5+ (260 Collocations, 15 chuyên đề Ngữ pháp / 150 bài tập, 18 Reading, 15 Listening + 2 Đề Thi thử Full-Length, 22 Writing, 12 Speaking).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -13,18 +13,31 @@
       "src": "./icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "./icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "./icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
