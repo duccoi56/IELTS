@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ielts-mastery-v22';
+const CACHE_NAME = 'ielts-mastery-v33';
 const CORE_ASSETS = [
   './',
   './index.html',
