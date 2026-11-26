@@ -14086,7 +14086,7 @@
     async function discoverGeminiTtsModels(apiKey) {
       const fallback = ['gemini-3.8-flash-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
       try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } });
         if (!resp.ok) return fallback;
         const data = await resp.json();
         const found = (data.models || [])
@@ -14111,7 +14111,7 @@
     }
 
     async function callGeminiTtsOnce(apiKey, modelId, promptText, speechConfig) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent`;
       const body = {
         contents: [{ parts: [{ text: promptText }] }],
         generationConfig: {
@@ -14121,7 +14121,7 @@
       };
       const resp = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(body)
       });
       const json = await resp.json().catch(() => ({}));
@@ -14934,8 +14934,16 @@
     }
 
     // ==================== UNIFIED MULTI-PROVIDER AI ENGINE (AUTO-MODEL DISCOVERY) ====================
+    const DEFAULT_AI_CONFIG = {
+      provider: 'gemini',
+      model: 'gemini-4-hydrogen',
+      resolvedModel: '',
+      apiKey: 'AQ.Ab8RN6JfE4yIf1X1qOeO-xL0IR7OlPSdHvU-ZJwuU0otX3XHHQ',
+      baseUrl: ''
+    };
+
     function getAiConfig() {
-      let cfg = { provider: 'gemini', model: 'auto', resolvedModel: '', apiKey: '', baseUrl: '' };
+      let cfg = { ...DEFAULT_AI_CONFIG };
       try {
         const raw = localStorage.getItem('ielts_ai_config_v1');
         if (raw) {
@@ -14986,7 +14994,7 @@
       const key = (cfg.apiKey || '').trim();
       if (!key) throw new Error('NO_API_KEY');
       if (cfg.provider === 'gemini') {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+        const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': key } });
         if (!resp.ok) throw new Error(`Google AI HTTP ${resp.status}`);
         const data = await resp.json();
         const models = (data.models || [])
@@ -15074,9 +15082,9 @@
       const executeCall = async (mName) => {
         let rawText = '';
         if (cfg.provider === 'gemini') {
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mName)}:generateContent?key=${encodeURIComponent(key)}`, {
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mName)}:generateContent`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: { responseMimeType: 'application/json' }
@@ -15113,9 +15121,9 @@
       try {
         return await executeCall(model);
       } catch (err) {
-        // If auto mode failed (e.g., cached model deprecated), re-discover live models once
-        if ((cfg.model || 'auto') === 'auto' && /HTTP 404|HTTP 400/.test(err.message)) {
-          const freshModel = await resolveActiveModel(cfg, true);
+        // If auto mode or preset model name returns 404/400, re-discover live models from the key once
+        if (/HTTP 404|HTTP 400/.test(err.message)) {
+          const freshModel = await resolveActiveModel({ ...cfg, model: 'auto' }, true);
           if (freshModel && freshModel !== model) return await executeCall(freshModel);
         }
         throw err;
@@ -16336,11 +16344,15 @@
         showToast(cfg.resolvedModel ? `Đã lưu API Key • Tự chọn model mới nhất: ${cfg.resolvedModel}` : 'Đã lưu cài đặt AI cục bộ thành công!', 'success');
       });
       document.getElementById('clearAiConfigBtn').addEventListener('click', () => {
-        if (!window.confirm('Xóa API Key đang lưu khỏi trình duyệt này?')) return;
-        try { localStorage.removeItem('ielts_ai_config_v1'); localStorage.removeItem('ielts_gemini_api_key'); } catch (e) {}
+        if (!window.confirm('Xóa API Key đang dùng khỏi trình duyệt này?')) return;
+        try {
+          localStorage.setItem('ielts_ai_config_v1', JSON.stringify({ provider: 'gemini', model: 'auto', resolvedModel: '', apiKey: '', baseUrl: '' }));
+          localStorage.removeItem('ielts_gemini_api_key');
+        } catch (e) {}
         document.getElementById('aiApiKeyInput').value = '';
+        document.getElementById('aiModelInput').value = 'auto';
         updateAiStatusIndicators();
-        showToast('Đã xóa API Key khỏi trình duyệt.', 'info');
+        showToast('Đã xóa API Key. Bạn có thể dán Key mới bất cứ lúc nào.', 'info');
       });
       document.getElementById('testAiConfigBtn').addEventListener('click', async () => {
         const testBox = document.getElementById('aiTestResultBox');
