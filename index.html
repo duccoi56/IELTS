@@ -1958,6 +1958,22 @@
         </div>
       </div>
 
+      <!-- Member Vault Unlock / Guest Mode Bar -->
+      <div id="aiVaultAccessBar" class="rounded-xl px-3.5 py-2.5 bg-indigo-50/70 border border-indigo-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="text-xs text-indigo-900">
+          <span class="font-bold">Chế độ truy cập:</span>
+          <span id="aiAccessModeLabel" class="font-semibold">Chưa chọn</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" id="openAccessGateFromAiBtn" class="px-2.5 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-colors">
+            Mở khóa bằng mật khẩu
+          </button>
+          <button type="button" id="switchGuestModeBtn" class="hidden px-2.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors">
+            Chuyển về Khách
+          </button>
+        </div>
+      </div>
+
       <!-- CARD 1: TEXT / GRADING AI (WRITING, SPEAKING & GENERAL AI) -->
       <div class="rounded-2xl border border-emerald-200/90 bg-emerald-50/40 p-4 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -2143,7 +2159,7 @@
         <div id="adminDashboardView" class="hidden space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
             <div class="text-xs text-emerald-900">
-              Đang đăng nhập với quyền Quản trị viên: <strong id="adminLoggedUser">duccoi56</strong>
+              Đang đăng nhập với quyền Quản trị viên: <strong id="adminLoggedUser">Admin</strong>
             </div>
             <div class="flex items-center gap-2">
               <button type="button" id="exportAdminLogsCsvBtn" class="px-3 py-1.5 rounded-lg bg-white border border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-xs font-bold">Xuất Log CSV</button>
@@ -2232,6 +2248,49 @@
 
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- First-Time Access Gate Modal (Member Encrypted AI Unlock vs Guest Offline Mode) -->
+  <div id="accessGateModal" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <i data-lucide="shield-check" class="w-6 h-6"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="accessGateTitle" class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">Chào mừng đến IELTS Mastery Studio</h3>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">Chọn chế độ sử dụng cho lần đầu truy cập. Khóa API AI mặc định được mã hóa AES-256-GCM và chỉ giải mã khi có mật khẩu.</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3.5 space-y-2.5">
+        <label for="accessGatePassInput" class="block text-xs font-bold text-slate-800">Thành viên — Nhập mật khẩu để mở khóa AI mặc định</label>
+        <div class="relative flex items-center">
+          <input type="password" id="accessGatePassInput" autocomplete="current-password" placeholder="Nhập mật khẩu mở khóa AI..." class="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          <button type="button" id="toggleAccessGatePassBtn" class="absolute right-2.5 p-1 text-slate-400 hover:text-slate-700" aria-label="Hiện hoặc ẩn mật khẩu">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <p id="accessGateError" class="hidden text-xs font-semibold text-rose-700"></p>
+        <button type="button" id="accessGateUnlockBtn" class="w-full py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold shadow-sm transition-colors flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span>Mở khóa AI &amp; Bắt đầu</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <div class="h-px flex-1 bg-slate-200"></div>
+        <span>hoặc</span>
+        <div class="h-px flex-1 bg-slate-200"></div>
+      </div>
+
+      <div class="space-y-1.5">
+        <button type="button" id="accessGateGuestBtn" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-sm font-bold transition-colors">
+          Tiếp tục là Khách (không dùng API AI)
+        </button>
+        <p class="text-xs text-slate-500 text-center">Chế độ Khách dùng đầy đủ Từ vựng, Ngữ pháp, Reading, Listening Offline, Writing &amp; Speaking.</p>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ==================== DATA BANK ====================
@@ -12527,6 +12586,134 @@
       pauseBtn.innerHTML = listeningPaused
         ? '<i data-lucide="play" class="w-4 h-4"></i> Tiếp tục'
         : '<i data-lucide="pause" class="w-4 h-4"></i> Tạm dừng';
+      // ==================== FIRST-TIME ACCESS GATE (ENCRYPTED AI VAULT) ====================
+      const accessGateModal = document.getElementById('accessGateModal');
+      const accessGatePassInput = document.getElementById('accessGatePassInput');
+      const accessGateError = document.getElementById('accessGateError');
+      const accessGateUnlockBtn = document.getElementById('accessGateUnlockBtn');
+      const accessGateGuestBtn = document.getElementById('accessGateGuestBtn');
+      const toggleAccessGatePassBtn = document.getElementById('toggleAccessGatePassBtn');
+      const openAccessGateFromAiBtn = document.getElementById('openAccessGateFromAiBtn');
+      const switchGuestModeBtn = document.getElementById('switchGuestModeBtn');
+
+      function syncAccessModeUI() {
+        const mode = getAccessMode();
+        const label = document.getElementById('aiAccessModeLabel');
+        if (label) {
+          label.textContent = mode === 'member'
+            ? 'Thành viên (đã mở khóa AI)'
+            : mode === 'guest'
+              ? 'Khách (chế độ Offline, không dùng API AI mặc định)'
+              : 'Chưa chọn';
+        }
+        if (switchGuestModeBtn) {
+          switchGuestModeBtn.classList.toggle('hidden', mode !== 'member');
+        }
+      }
+
+      function openAccessGateModal() {
+        if (!accessGateModal) return;
+        if (accessGateError) {
+          accessGateError.textContent = '';
+          accessGateError.classList.add('hidden');
+        }
+        if (accessGatePassInput) accessGatePassInput.value = '';
+        accessGateModal.classList.remove('hidden');
+        setTimeout(() => { if (accessGatePassInput) accessGatePassInput.focus(); }, 60);
+      }
+
+      async function handleAccessGateUnlock() {
+        const pass = (accessGatePassInput ? accessGatePassInput.value : '').trim();
+        if (!pass) {
+          if (accessGateError) {
+            accessGateError.textContent = 'Vui lòng nhập mật khẩu hoặc chọn tiếp tục với chế độ Khách.';
+            accessGateError.classList.remove('hidden');
+          }
+          return;
+        }
+        if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = true;
+        if (accessGateError) accessGateError.classList.add('hidden');
+        try {
+          const decrypted = await decryptAiVault(pass);
+          const current = getAiConfig();
+          const merged = {
+            ...current,
+            provider: decrypted.provider || 'gemini',
+            model: decrypted.model || current.model,
+            apiKey: decrypted.apiKey || '',
+            ttsApiKey: decrypted.ttsApiKey || '',
+            ttsModel: decrypted.ttsModel || current.ttsModel
+          };
+          setAccessMode('member');
+          saveAiConfig(merged);
+          syncAccessModeUI();
+          if (accessGateModal) accessGateModal.classList.add('hidden');
+          if (accessGatePassInput) accessGatePassInput.value = '';
+          if (typeof showToast === 'function') showToast('Đã mở khóa API AI mặc định thành công!', 'success');
+        } catch (err) {
+          if (accessGateError) {
+            accessGateError.textContent = err && err.message === 'INSECURE_CONTEXT'
+              ? 'Trình duyệt cần chạy qua HTTPS (GitHub Pages) hoặc localhost để giải mã Web Crypto.'
+              : 'Mật khẩu không đúng. Vui lòng thử lại hoặc tiếp tục với chế độ Khách.';
+            accessGateError.classList.remove('hidden');
+          }
+        } finally {
+          if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = false;
+        }
+      }
+
+      function enterGuestMode() {
+        setAccessMode('guest');
+        try {
+          localStorage.setItem('ielts_ai_config_v1', JSON.stringify({
+            provider: 'gemini',
+            model: 'gemini-4-hydrogen',
+            resolvedModel: '',
+            apiKey: '',
+            baseUrl: '',
+            ttsApiKey: '',
+            ttsModel: 'gemini-3.8-flash-tts'
+          }));
+          localStorage.removeItem('ielts_gemini_api_key');
+        } catch (e) {}
+        updateAiStatusIndicators();
+        syncAccessModeUI();
+        if (accessGateModal) accessGateModal.classList.add('hidden');
+        if (typeof showToast === 'function') showToast('Đã vào chế độ Khách — học Offline không dùng API AI.', 'info');
+      }
+
+      if (toggleAccessGatePassBtn && accessGatePassInput) {
+        toggleAccessGatePassBtn.addEventListener('click', () => {
+          accessGatePassInput.type = accessGatePassInput.type === 'password' ? 'text' : 'password';
+        });
+      }
+      if (accessGateUnlockBtn) accessGateUnlockBtn.addEventListener('click', handleAccessGateUnlock);
+      if (accessGatePassInput) {
+        accessGatePassInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); handleAccessGateUnlock(); }
+        });
+      }
+      if (accessGateGuestBtn) accessGateGuestBtn.addEventListener('click', enterGuestMode);
+      if (openAccessGateFromAiBtn) {
+        openAccessGateFromAiBtn.addEventListener('click', () => {
+          const aiModal = document.getElementById('aiSettingsModal');
+          if (aiModal) aiModal.classList.add('hidden');
+          openAccessGateModal();
+        });
+      }
+      if (switchGuestModeBtn) {
+        switchGuestModeBtn.addEventListener('click', () => {
+          enterGuestMode();
+          const aiModal = document.getElementById('aiSettingsModal');
+          if (aiModal) aiModal.classList.add('hidden');
+        });
+      }
+
+      syncAccessModeUI();
+      if (!getAccessMode()) {
+        openAccessGateModal();
+      }
+
       if (window.lucide) lucide.createIcons();
     }
 
@@ -13110,16 +13297,69 @@
     }
 
     // ==================== UNIFIED MULTI-PROVIDER AI ENGINE (AUTO-MODEL DISCOVERY) ====================
-    const LEGACY_REPLACED_KEY = 'AQ.Ab8RN6JfE4yIf1X1qOeO-xL0IR7OlPSdHvU-ZJwuU0otX3XHHQ';
+    const ACCESS_MODE_KEY = 'ielts_access_mode_v1';
+    const ENCRYPTED_AI_VAULT = {"v":1,"alg":"PBKDF2-SHA256-AES-256-GCM","iter":150000,"salt":"I6YnopJ17oRUeOd+SwHCYw==","iv":"ChOyJpgcu8+UsaN1","ct":"y0Me8a7DrHAe8VrVOmBDVDx4O1qX0fYyv5wZT5v/aSomR2ejhsalKghl48t9El88p9BENbw17/SfqS7Leo6ToIRPjvdibP6/Uo7ASsVW54OGlvmnOus4bGTEzz4OjmDTC4ej525IBw6gIit9SdL5WITBI1SUhWaF95QaAeAOqBlxROJBcUgiSxPiI36ySRfXWI8hDJ3ilj5yjGKRW+C/s8n/8xc/t5CQ4Tt26Xhy5t2wp/zd2/LVrxGh4Bv83PefRSChqOthMmTHLOcJ6msBHxoDjS35C63v1h1YiL2lrls0/Bhk+pTtHQ=="};
     const DEFAULT_AI_CONFIG = {
       provider: 'gemini',
       model: 'gemini-4-hydrogen',
       resolvedModel: '',
-      apiKey: 'AQ.Ab8RN6IjC3-RC5H2-YPP-6iczx8Tezqy-Uk7NdvoNQKESl5kyg',
+      apiKey: '',
       baseUrl: '',
-      ttsApiKey: 'AQ.Ab8RN6IUGDNjxcrmOEGkBJXF18YI1seWFdoU7nsD6GTJ7elv5A',
+      ttsApiKey: '',
       ttsModel: 'gemini-3.8-flash-tts'
     };
+
+    function b64ToBytes(b64) {
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
+    async function decryptAiVault(passphrase) {
+      if (!window.crypto || !window.crypto.subtle) {
+        throw new Error('INSECURE_CONTEXT');
+      }
+      const enc = new TextEncoder();
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        enc.encode(passphrase),
+        'PBKDF2',
+        false,
+        ['deriveKey']
+      );
+      const aesKey = await window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: b64ToBytes(ENCRYPTED_AI_VAULT.salt),
+          iterations: ENCRYPTED_AI_VAULT.iter,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      const plainBuf = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: b64ToBytes(ENCRYPTED_AI_VAULT.iv) },
+        aesKey,
+        b64ToBytes(ENCRYPTED_AI_VAULT.ct)
+      );
+      return JSON.parse(new TextDecoder().decode(plainBuf));
+    }
+
+    function getAccessMode() {
+      try {
+        return localStorage.getItem(ACCESS_MODE_KEY) || '';
+      } catch (e) { return ''; }
+    }
+
+    function setAccessMode(mode) {
+      try {
+        if (mode) localStorage.setItem(ACCESS_MODE_KEY, mode);
+        else localStorage.removeItem(ACCESS_MODE_KEY);
+      } catch (e) {}
+    }
 
     function getAiConfig() {
       let cfg = { ...DEFAULT_AI_CONFIG };
@@ -13128,15 +13368,9 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           cfg = { ...cfg, ...parsed };
-          // Auto-migrate old replaced default key so browser localStorage doesn't stay stuck on 401
-          if (cfg.apiKey === LEGACY_REPLACED_KEY) {
-            cfg.apiKey = DEFAULT_AI_CONFIG.apiKey;
-            if (!cfg.model || cfg.model === 'gpt-4-hydrogen') cfg.model = DEFAULT_AI_CONFIG.model;
-            localStorage.setItem('ielts_ai_config_v1', JSON.stringify(cfg));
-          }
-        } else {
+        } else if (getAccessMode() !== 'guest') {
           const legacy = (localStorage.getItem('ielts_gemini_api_key') || '').trim();
-          if (legacy && legacy !== LEGACY_REPLACED_KEY) cfg.apiKey = legacy;
+          if (legacy) cfg.apiKey = legacy;
         }
       } catch (e) {}
       if (!cfg.model) cfg.model = 'gemini-4-hydrogen';
@@ -14731,8 +14965,9 @@
 
       // ==================== ADMIN PORTAL & ACCESS LOGS ====================
       let isAdminAuthenticated = false;
-      const ADMIN_USER = 'duccoi56';
-      const ADMIN_PASS = 'duccoi56';
+      const ADMIN_AUTH_SALT = '784fad3c177bee197a29b0e1';
+      const ADMIN_CRED_HASH = '998844645bbd60d4def81f433ed4313c65f7046476b1bffe6c55b8dc650a7f1d';
+      let adminLoggedUserName = 'Admin';
 
       function formatVNTime(dateObj) {
         const pad = n => String(n).padStart(2, '0');
@@ -14827,11 +15062,20 @@
         if (e.target === adminModal) adminModal.classList.add('hidden');
       });
 
-      const handleAdminLogin = () => {
+      const handleAdminLogin = async () => {
         const u = (document.getElementById('adminUserInput').value || '').trim();
         const p = (document.getElementById('adminPassInput').value || '').trim();
         const errEl = document.getElementById('adminLoginError');
-        if (u === ADMIN_USER && p === ADMIN_PASS) {
+        let ok = false;
+        try {
+          if (window.crypto && window.crypto.subtle) {
+            const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ADMIN_AUTH_SALT}:${u}:${p}`));
+            const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            ok = (hex === ADMIN_CRED_HASH);
+          }
+        } catch (e) {}
+        if (ok) {
+          adminLoggedUserName = u;
           isAdminAuthenticated = true;
           errEl.classList.add('hidden');
           document.getElementById('adminPassInput').value = '';
@@ -14861,7 +15105,7 @@
       });
 
       document.getElementById('adminLogoutBtn').addEventListener('click', () => {
-        recordAccessLog(ADMIN_USER, 'admin_ok', 'Đăng xuất Cổng Quản trị', 'Đã thoát');
+        recordAccessLog(adminLoggedUserName, 'admin_ok', 'Đăng xuất Cổng Quản trị', 'Đã thoát');
         isAdminAuthenticated = false;
         syncAdminView();
         showToast('Đã đăng xuất khỏi quyền Quản trị viên.', 'info');
@@ -14869,7 +15113,7 @@
       document.getElementById('adminLogFilter').addEventListener('change', renderAdminDashboard);
       document.getElementById('clearAdminLogsBtn').addEventListener('click', () => {
         appState.accessLogs = [];
-        recordAccessLog(ADMIN_USER, 'admin_ok', 'Dọn sạch nhật ký cũ', 'Hoàn tất');
+        recordAccessLog(adminLoggedUserName, 'admin_ok', 'Dọn sạch nhật ký cũ', 'Hoàn tất');
         renderAdminDashboard();
         showToast('Đã xóa các nhật ký cũ.', 'info');
       });
