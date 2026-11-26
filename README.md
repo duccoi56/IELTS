@@ -32,4 +32,4 @@ Gói mã nguồn hoàn chỉnh để triển khai trực tiếp lên **GitHub Pa
 
 ## 3. Thông tin Cổng Quản trị viên
 - Bấm biểu tượng chiếc khiên ở góc trên phải của ứng dụng.
-- Tên đăng nhập: `duccoi56` | Mật khẩu: `duccoi56`
+- Sử dụng tài khoản & mật khẩu quản trị riêng của bạn (đã ẩn khỏi tài liệu công khai để bảo mật).

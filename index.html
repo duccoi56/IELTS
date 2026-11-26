@@ -2250,7 +2250,7 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- First-Time Access Gate Modal (Member Encrypted AI Unlock vs Guest Offline Mode) -->
-  <div id="accessGateModal" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="accessGateModal" role="dialog" aria-modal="true" aria-labelledby="accessGateTitle" class="hidden fixed inset-0 z-[60] bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 p-5 sm:p-6 space-y-4">
       <div class="flex items-start gap-3">
         <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -11097,7 +11097,7 @@
       const preferred = geminiKeySurfaceCache[apiKey] || 'studio';
       const surfaces = preferred === 'vertex'
         ? ['vertex', 'studio']
-        : (String(apiKey || '').startsWith('AQ.') ? ['studio', 'vertex'] : ['studio']);
+        : (String(apiKey || '').startsWith('AQ.') ? ['vertex', 'studio'] : ['studio']);
 
       let lastErr = null;
       for (const surf of surfaces) {
@@ -12586,134 +12586,6 @@
       pauseBtn.innerHTML = listeningPaused
         ? '<i data-lucide="play" class="w-4 h-4"></i> Tiếp tục'
         : '<i data-lucide="pause" class="w-4 h-4"></i> Tạm dừng';
-      // ==================== FIRST-TIME ACCESS GATE (ENCRYPTED AI VAULT) ====================
-      const accessGateModal = document.getElementById('accessGateModal');
-      const accessGatePassInput = document.getElementById('accessGatePassInput');
-      const accessGateError = document.getElementById('accessGateError');
-      const accessGateUnlockBtn = document.getElementById('accessGateUnlockBtn');
-      const accessGateGuestBtn = document.getElementById('accessGateGuestBtn');
-      const toggleAccessGatePassBtn = document.getElementById('toggleAccessGatePassBtn');
-      const openAccessGateFromAiBtn = document.getElementById('openAccessGateFromAiBtn');
-      const switchGuestModeBtn = document.getElementById('switchGuestModeBtn');
-
-      function syncAccessModeUI() {
-        const mode = getAccessMode();
-        const label = document.getElementById('aiAccessModeLabel');
-        if (label) {
-          label.textContent = mode === 'member'
-            ? 'Thành viên (đã mở khóa AI)'
-            : mode === 'guest'
-              ? 'Khách (chế độ Offline, không dùng API AI mặc định)'
-              : 'Chưa chọn';
-        }
-        if (switchGuestModeBtn) {
-          switchGuestModeBtn.classList.toggle('hidden', mode !== 'member');
-        }
-      }
-
-      function openAccessGateModal() {
-        if (!accessGateModal) return;
-        if (accessGateError) {
-          accessGateError.textContent = '';
-          accessGateError.classList.add('hidden');
-        }
-        if (accessGatePassInput) accessGatePassInput.value = '';
-        accessGateModal.classList.remove('hidden');
-        setTimeout(() => { if (accessGatePassInput) accessGatePassInput.focus(); }, 60);
-      }
-
-      async function handleAccessGateUnlock() {
-        const pass = (accessGatePassInput ? accessGatePassInput.value : '').trim();
-        if (!pass) {
-          if (accessGateError) {
-            accessGateError.textContent = 'Vui lòng nhập mật khẩu hoặc chọn tiếp tục với chế độ Khách.';
-            accessGateError.classList.remove('hidden');
-          }
-          return;
-        }
-        if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = true;
-        if (accessGateError) accessGateError.classList.add('hidden');
-        try {
-          const decrypted = await decryptAiVault(pass);
-          const current = getAiConfig();
-          const merged = {
-            ...current,
-            provider: decrypted.provider || 'gemini',
-            model: decrypted.model || current.model,
-            apiKey: decrypted.apiKey || '',
-            ttsApiKey: decrypted.ttsApiKey || '',
-            ttsModel: decrypted.ttsModel || current.ttsModel
-          };
-          setAccessMode('member');
-          saveAiConfig(merged);
-          syncAccessModeUI();
-          if (accessGateModal) accessGateModal.classList.add('hidden');
-          if (accessGatePassInput) accessGatePassInput.value = '';
-          if (typeof showToast === 'function') showToast('Đã mở khóa API AI mặc định thành công!', 'success');
-        } catch (err) {
-          if (accessGateError) {
-            accessGateError.textContent = err && err.message === 'INSECURE_CONTEXT'
-              ? 'Trình duyệt cần chạy qua HTTPS (GitHub Pages) hoặc localhost để giải mã Web Crypto.'
-              : 'Mật khẩu không đúng. Vui lòng thử lại hoặc tiếp tục với chế độ Khách.';
-            accessGateError.classList.remove('hidden');
-          }
-        } finally {
-          if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = false;
-        }
-      }
-
-      function enterGuestMode() {
-        setAccessMode('guest');
-        try {
-          localStorage.setItem('ielts_ai_config_v1', JSON.stringify({
-            provider: 'gemini',
-            model: 'gemini-4-hydrogen',
-            resolvedModel: '',
-            apiKey: '',
-            baseUrl: '',
-            ttsApiKey: '',
-            ttsModel: 'gemini-3.8-flash-tts'
-          }));
-          localStorage.removeItem('ielts_gemini_api_key');
-        } catch (e) {}
-        updateAiStatusIndicators();
-        syncAccessModeUI();
-        if (accessGateModal) accessGateModal.classList.add('hidden');
-        if (typeof showToast === 'function') showToast('Đã vào chế độ Khách — học Offline không dùng API AI.', 'info');
-      }
-
-      if (toggleAccessGatePassBtn && accessGatePassInput) {
-        toggleAccessGatePassBtn.addEventListener('click', () => {
-          accessGatePassInput.type = accessGatePassInput.type === 'password' ? 'text' : 'password';
-        });
-      }
-      if (accessGateUnlockBtn) accessGateUnlockBtn.addEventListener('click', handleAccessGateUnlock);
-      if (accessGatePassInput) {
-        accessGatePassInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); handleAccessGateUnlock(); }
-        });
-      }
-      if (accessGateGuestBtn) accessGateGuestBtn.addEventListener('click', enterGuestMode);
-      if (openAccessGateFromAiBtn) {
-        openAccessGateFromAiBtn.addEventListener('click', () => {
-          const aiModal = document.getElementById('aiSettingsModal');
-          if (aiModal) aiModal.classList.add('hidden');
-          openAccessGateModal();
-        });
-      }
-      if (switchGuestModeBtn) {
-        switchGuestModeBtn.addEventListener('click', () => {
-          enterGuestMode();
-          const aiModal = document.getElementById('aiSettingsModal');
-          if (aiModal) aiModal.classList.add('hidden');
-        });
-      }
-
-      syncAccessModeUI();
-      if (!getAccessMode()) {
-        openAccessGateModal();
-      }
-
       if (window.lucide) lucide.createIcons();
     }
 
@@ -13298,7 +13170,7 @@
 
     // ==================== UNIFIED MULTI-PROVIDER AI ENGINE (AUTO-MODEL DISCOVERY) ====================
     const ACCESS_MODE_KEY = 'ielts_access_mode_v1';
-    const ENCRYPTED_AI_VAULT = {"v":1,"alg":"PBKDF2-SHA256-AES-256-GCM","iter":150000,"salt":"I6YnopJ17oRUeOd+SwHCYw==","iv":"ChOyJpgcu8+UsaN1","ct":"y0Me8a7DrHAe8VrVOmBDVDx4O1qX0fYyv5wZT5v/aSomR2ejhsalKghl48t9El88p9BENbw17/SfqS7Leo6ToIRPjvdibP6/Uo7ASsVW54OGlvmnOus4bGTEzz4OjmDTC4ej525IBw6gIit9SdL5WITBI1SUhWaF95QaAeAOqBlxROJBcUgiSxPiI36ySRfXWI8hDJ3ilj5yjGKRW+C/s8n/8xc/t5CQ4Tt26Xhy5t2wp/zd2/LVrxGh4Bv83PefRSChqOthMmTHLOcJ6msBHxoDjS35C63v1h1YiL2lrls0/Bhk+pTtHQ=="};
+    const ENCRYPTED_AI_VAULT = {"v":1,"alg":"PBKDF2-SHA256-AES-256-GCM","iter":150000,"salt":"XmQyYx+mNJpBstF6xtRyQw==","iv":"n35GUT+wdEBn3FFX","ct":"dlEiAdcu+5mm3QPs0OLSxXa5qrqDlYMTC6xv3bKMRKtDWA4S+q3mdIGjWOnyQEpnuqUpqa+6WsKeSP5EG/5tJgbC3ggemcxafh7gDxINFR7D4WlHgJiaYuQIiiXH+0dUsPBQ7sNogIlWfX2S9XNMDpeVZ00jnU5IjDvxCgRPJaEGyPQs74jRppS2VQoMlR3eTtDh5zES4VYlggQDtK6B5r9mTjRnPJ3ccyD0gLU5L+M0aZN1PCbONXuAyAJgMfJiphtpzeFsqJR2IDR4hk6cwFtGRB4AUvEFSgPCdDrS7YVDnPwb+d01Rg=="};
     const DEFAULT_AI_CONFIG = {
       provider: 'gemini',
       model: 'gemini-4-hydrogen',
@@ -13422,6 +13294,7 @@
       const key = (cfg.apiKey || '').trim();
       if (!key) throw new Error('NO_API_KEY');
       if (cfg.provider === 'gemini') {
+        if (key.startsWith('AQ.')) return ['gemini-4-hydrogen', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'];
         const resp = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`, {}, 15000);
         if (!resp.ok) throw new Error(`Google AI HTTP ${resp.status}`);
         const data = await resp.json();
@@ -16850,6 +16723,137 @@
           switchTab(hTab, { fromHash: true });
         }
       });
+
+      // ==================== FIRST-TIME ACCESS GATE (ENCRYPTED AI VAULT) ====================
+      const accessGateModal = document.getElementById('accessGateModal');
+      const accessGatePassInput = document.getElementById('accessGatePassInput');
+      const accessGateError = document.getElementById('accessGateError');
+      const accessGateUnlockBtn = document.getElementById('accessGateUnlockBtn');
+      const accessGateGuestBtn = document.getElementById('accessGateGuestBtn');
+      const toggleAccessGatePassBtn = document.getElementById('toggleAccessGatePassBtn');
+      const openAccessGateFromAiBtn = document.getElementById('openAccessGateFromAiBtn');
+      const switchGuestModeBtn = document.getElementById('switchGuestModeBtn');
+
+      function syncAccessModeUI() {
+        const mode = getAccessMode();
+        const label = document.getElementById('aiAccessModeLabel');
+        if (label) {
+          label.textContent = mode === 'member'
+            ? 'Thành viên (đã mở khóa AI)'
+            : mode === 'guest'
+              ? 'Khách (chế độ Offline, không dùng API AI mặc định)'
+              : 'Chưa chọn';
+        }
+        if (switchGuestModeBtn) {
+          switchGuestModeBtn.classList.toggle('hidden', mode !== 'member');
+        }
+      }
+
+      function openAccessGateModal() {
+        if (!accessGateModal) return;
+        if (accessGateError) {
+          accessGateError.textContent = '';
+          accessGateError.classList.add('hidden');
+        }
+        if (accessGatePassInput) accessGatePassInput.value = '';
+        accessGateModal.classList.remove('hidden');
+        setTimeout(() => { if (accessGatePassInput) accessGatePassInput.focus(); }, 60);
+      }
+
+      async function handleAccessGateUnlock() {
+        const pass = (accessGatePassInput ? accessGatePassInput.value : '').trim();
+        if (!pass) {
+          if (accessGateError) {
+            accessGateError.textContent = 'Vui lòng nhập mật khẩu hoặc chọn tiếp tục với chế độ Khách.';
+            accessGateError.classList.remove('hidden');
+          }
+          return;
+        }
+        if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = true;
+        if (accessGateError) accessGateError.classList.add('hidden');
+        try {
+          const decrypted = await decryptAiVault(pass);
+          const current = getAiConfig();
+          const merged = {
+            ...current,
+            provider: decrypted.provider || 'gemini',
+            model: decrypted.model || current.model,
+            apiKey: decrypted.apiKey || '',
+            ttsApiKey: decrypted.ttsApiKey || '',
+            ttsModel: decrypted.ttsModel || current.ttsModel
+          };
+          setAccessMode('member');
+          saveAiConfig(merged);
+          syncAccessModeUI();
+          if (accessGateModal) accessGateModal.classList.add('hidden');
+          if (accessGatePassInput) accessGatePassInput.value = '';
+          if (typeof showToast === 'function') showToast('Đã mở khóa API AI mặc định thành công!', 'success');
+        } catch (err) {
+          if (accessGateError) {
+            accessGateError.textContent = err && err.message === 'INSECURE_CONTEXT'
+              ? 'Trình duyệt cần chạy qua HTTPS (GitHub Pages) hoặc localhost để giải mã Web Crypto.'
+              : 'Mật khẩu không đúng. Vui lòng thử lại hoặc tiếp tục với chế độ Khách.';
+            accessGateError.classList.remove('hidden');
+          }
+        } finally {
+          if (accessGateUnlockBtn) accessGateUnlockBtn.disabled = false;
+        }
+      }
+
+      function enterGuestMode() {
+        setAccessMode('guest');
+        try {
+          localStorage.setItem('ielts_ai_config_v1', JSON.stringify({
+            provider: 'gemini',
+            model: 'gemini-4-hydrogen',
+            resolvedModel: '',
+            apiKey: '',
+            baseUrl: '',
+            ttsApiKey: '',
+            ttsModel: 'gemini-3.8-flash-tts'
+          }));
+          localStorage.removeItem('ielts_gemini_api_key');
+        } catch (e) {}
+        updateAiStatusIndicators();
+        syncAccessModeUI();
+        if (accessGateModal) accessGateModal.classList.add('hidden');
+        if (typeof showToast === 'function') showToast('Đã vào chế độ Khách — học Offline không dùng API AI.', 'info');
+      }
+
+      if (toggleAccessGatePassBtn && accessGatePassInput) {
+        toggleAccessGatePassBtn.addEventListener('click', () => {
+          accessGatePassInput.type = accessGatePassInput.type === 'password' ? 'text' : 'password';
+        });
+      }
+      if (accessGateUnlockBtn) accessGateUnlockBtn.addEventListener('click', handleAccessGateUnlock);
+      if (accessGatePassInput) {
+        accessGatePassInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); handleAccessGateUnlock(); }
+        });
+      }
+      if (accessGateGuestBtn) accessGateGuestBtn.addEventListener('click', enterGuestMode);
+      if (openAccessGateFromAiBtn) {
+        openAccessGateFromAiBtn.addEventListener('click', () => {
+          const aiModal = document.getElementById('aiSettingsModal');
+          if (aiModal) aiModal.classList.add('hidden');
+          openAccessGateModal();
+        });
+      }
+      if (switchGuestModeBtn) {
+        switchGuestModeBtn.addEventListener('click', () => {
+          enterGuestMode();
+          const aiModal = document.getElementById('aiSettingsModal');
+          if (aiModal) aiModal.classList.add('hidden');
+        });
+      }
+
+      const aiSettingsBtnEl = document.getElementById('aiSettingsBtn');
+      if (aiSettingsBtnEl) aiSettingsBtnEl.addEventListener('click', syncAccessModeUI);
+
+      syncAccessModeUI();
+      if (!getAccessMode()) {
+        openAccessGateModal();
+      }
 
       if (window.lucide) lucide.createIcons();
     }
