@@ -1049,15 +1049,25 @@
               <option value="en-AU" class="text-slate-900">Giọng AU (Úc)</option>
               <option value="en-US" class="text-slate-900">Giọng US</option>
             </select>
+            <button type="button" id="listenGenAiAudioBtn" class="px-3 py-2 rounded-xl bg-indigo-500/25 hover:bg-indigo-500/40 border border-indigo-400/60 text-indigo-100 text-xs font-bold inline-flex items-center gap-1.5 transition-colors" title="Tạo audio AI đa giọng (nam/nữ, ngữ điệu IELTS) và phát trực tiếp">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+              <span id="listenGenAiAudioLabel">Audio AI</span>
+            </button>
             <label class="cursor-pointer px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-400/50 text-emerald-200 text-xs font-bold inline-flex items-center gap-1" title="Nạp tệp MP3/M4A thật từ thiết bị của bạn">
               🎵 Nạp MP3/M4A
               <input id="customListenAudioInput" type="file" accept="audio/*" class="hidden" />
             </label>
           </div>
           <div class="md:col-span-5 space-y-1.5">
-            <div id="customListenAudioWrap" class="hidden flex items-center gap-2 bg-slate-800/90 border border-emerald-500/40 rounded-xl px-2.5 py-1.5">
+            <div id="customListenAudioWrap" class="hidden space-y-1.5 bg-slate-800/90 border border-emerald-500/40 rounded-xl px-2.5 py-2">
+              <div class="flex items-center justify-between gap-2 text-[11px]">
+                <span id="customListenAudioMeta" class="font-bold text-emerald-300 truncate">Audio sẵn sàng</span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" id="downloadAiListenAudioBtn" class="hidden px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-indigo-200 text-[10px] font-bold" title="Tải file audio WAV về thiết bị">⬇ WAV</button>
+                  <button type="button" id="clearCustomListenAudioBtn" class="px-1.5 py-0.5 rounded-md text-[11px] font-bold text-slate-300 hover:text-white" title="Quay lại giọng trình duyệt (Web Speech)">✕</button>
+                </div>
+              </div>
               <audio id="customListenAudioEl" controls playsinline class="w-full h-8"></audio>
-              <button type="button" id="clearCustomListenAudioBtn" class="text-[11px] font-bold text-slate-300 hover:text-white shrink-0" title="Quay lại giọng TTS">✕</button>
             </div>
             <div class="flex justify-between text-[11px] text-slate-300">
               <span id="listeningActiveSpeaker">Nhân vật đang nói: —</span>
@@ -13942,6 +13952,392 @@
       return LISTENING_EXERCISES.filter(ex => (ex.part || '').startsWith(activeListeningSection));
     }
 
+
+    // ==================== AI MULTI-SPEAKER LISTENING TTS (TRỰC TIẾP, KHÔNG LƯU OFFLINE) ====================
+    let activeListenAiRecord = null;
+    let activeMockAiRecord = null;
+    let customListenBlobUrl = null;
+    let mockCustomBlobUrl = null;
+
+    function inferSpeakerGender(speakerName, pitch) {
+      const s = String(speakerName || '').toLowerCase();
+      if (/\(nữ\)|female|ms\.|mrs\.|maya|chloe|elena|sarah|emily/.test(s)) return 'female';
+      if (/\(nam\)|male|mr\.|dr\.\s*patel|prof\.\s*grant|liam|noah|ben|sam|park ranger|lecturer/.test(s)) return 'male';
+      return (typeof pitch === 'number' && pitch > 1.02) ? 'female' : 'male';
+    }
+
+    function buildIeltsSpeakerPlan(ex) {
+      const femaleVoices = ['Kore', 'Aoede', 'Zephyr', 'Leda'];
+      const maleVoices = ['Charon', 'Puck', 'Fenrir', 'Orus'];
+      let fIdx = 0, mIdx = 0;
+      const map = new Map();
+      (ex.turns || []).forEach((t) => {
+        const name = String(t.speaker || 'Speaker').trim();
+        if (!map.has(name)) {
+          const gender = inferSpeakerGender(name, t.pitch);
+          const voiceName = gender === 'female'
+            ? femaleVoices[fIdx++ % femaleVoices.length]
+            : maleVoices[mIdx++ % maleVoices.length];
+          const apiTag = `Speaker${map.size + 1}`;
+          map.set(name, { speaker: name, apiTag, gender, voiceName });
+        }
+      });
+      return Array.from(map.values());
+    }
+
+    function formatTurnForIeltsSpeech(text) {
+      return String(text || '')
+        .replace(/\b([A-Z])(?:-([A-Z])){2,}\b/g, (m) => m.split('-').join(', '))
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function buildIeltsDeliveryStyle(ex, accent) {
+      const accentDesc = accent === 'en-AU'
+        ? 'natural Australian English accent'
+        : accent === 'en-US'
+          ? 'natural North American English accent'
+          : 'natural British English accent';
+      const part = String(ex.part || '').toLowerCase();
+      if (part.includes('section 1')) {
+        return `Authentic IELTS Listening Section 1 everyday dialogue in a ${accentDesc}. Clear articulation, realistic conversational intonation, slight natural pauses before numbers, dates, prices, and spelled names, and natural emphasis when correcting information.`;
+      }
+      if (part.includes('section 2')) {
+        return `Authentic IELTS Listening Section 2 informative talk in a ${accentDesc}. Friendly, poised public speaker tone with clear signposting, directional emphasis, and measured pauses between points.`;
+      }
+      if (part.includes('section 3')) {
+        return `Authentic IELTS Listening Section 3 academic tutorial discussion in a ${accentDesc}. Natural university seminar cadence with expressive agreement, hesitation, contrast, and clear emphasis on key ideas.`;
+      }
+      return `Authentic IELTS Listening Section 4 university lecture in a ${accentDesc}. Steady, authoritative academic delivery with clear stress on key terminology and logical transitions.`;
+    }
+
+    function base64ToUint8Array(b64) {
+      const bin = atob(b64);
+      const len = bin.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    function isWavBytes(bytes) {
+      return bytes && bytes.length > 44 &&
+        bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x41 && bytes[10] === 0x56 && bytes[11] === 0x45;
+    }
+
+    function extractPcmFromWav(bytes) {
+      if (!isWavBytes(bytes)) return { pcm: bytes, sampleRate: 24000 };
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      let sampleRate = 24000;
+      let offset = 12;
+      while (offset + 8 <= bytes.length) {
+        const chunkId = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
+        const chunkSize = view.getUint32(offset + 4, true);
+        if (chunkId === 'fmt ' && offset + 16 <= bytes.length) {
+          sampleRate = view.getUint32(offset + 12, true) || 24000;
+        } else if (chunkId === 'data') {
+          const start = offset + 8;
+          const end = Math.min(bytes.length, start + chunkSize);
+          return { pcm: bytes.subarray(start, end), sampleRate };
+        }
+        offset += 8 + chunkSize + (chunkSize % 2);
+      }
+      return { pcm: bytes.subarray(44), sampleRate };
+    }
+
+    function buildWavFromPcmChunks(pcmChunks, sampleRate = 24000, gapMs = 280) {
+      const numChannels = 1;
+      const bitsPerSample = 16;
+      const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+      const blockAlign = numChannels * (bitsPerSample / 8);
+      const gapSamples = Math.round((sampleRate * gapMs) / 1000);
+      const gapBytesLen = gapSamples * blockAlign;
+      let dataLen = 0;
+      pcmChunks.forEach((c, idx) => {
+        dataLen += c.length;
+        if (idx < pcmChunks.length - 1 && gapBytesLen > 0) dataLen += gapBytesLen;
+      });
+      const buf = new ArrayBuffer(44 + dataLen);
+      const view = new DataView(buf);
+      const out = new Uint8Array(buf);
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataLen, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitsPerSample, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataLen, true);
+      let pos = 44;
+      pcmChunks.forEach((c, idx) => {
+        out.set(c, pos);
+        pos += c.length;
+        if (idx < pcmChunks.length - 1 && gapBytesLen > 0) pos += gapBytesLen;
+      });
+      return out;
+    }
+
+    async function discoverGeminiTtsModels(apiKey) {
+      const fallback = ['gemini-3.8-flash-tts', 'gemini-3.1-flash-tts-preview', 'gemini-2.5-flash-preview-tts', 'gemini-2.5-pro-preview-tts'];
+      try {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+        if (!resp.ok) return fallback;
+        const data = await resp.json();
+        const found = (data.models || [])
+          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => String(m.name || '').replace(/^models\//, ''))
+          .filter(id => /tts/i.test(id));
+        if (!found.length) return fallback;
+        const score = (id) => {
+          let s = 0;
+          const ver = id.match(/(\d+)(?:\.(\d+))?/);
+          if (ver) s += parseFloat(`${ver[1]}.${ver[2] || 0}`) * 100;
+          if (/flash/i.test(id) && !/lite/i.test(id)) s += 20;
+          else if (/pro/i.test(id)) s += 15;
+          if (/preview|exp/i.test(id)) s -= 3;
+          return s;
+        };
+        const sorted = found.sort((a, b) => score(b) - score(a));
+        return [...new Set([...sorted, ...fallback])];
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    async function callGeminiTtsOnce(apiKey, modelId, promptText, speechConfig) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const body = {
+        contents: [{ parts: [{ text: promptText }] }],
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig
+        }
+      };
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const json = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = json?.error?.message || `HTTP ${resp.status}`;
+        const err = new Error(msg);
+        err.status = resp.status;
+        throw err;
+      }
+      const parts = json?.candidates?.[0]?.content?.parts || [];
+      const audioPart = parts.find(p => p.inlineData && p.inlineData.data);
+      if (!audioPart) throw new Error('Model không trả về dữ liệu âm thanh.');
+      const mime = String(audioPart.inlineData.mimeType || 'audio/L16;codec=pcm;rate=24000');
+      const rawBytes = base64ToUint8Array(audioPart.inlineData.data);
+      if (isWavBytes(rawBytes) || /wav/i.test(mime)) {
+        const parsed = extractPcmFromWav(rawBytes);
+        return { wavBytes: rawBytes, pcmBytes: parsed.pcm, sampleRate: parsed.sampleRate, model: modelId };
+      }
+      const rateMatch = mime.match(/rate=(\d+)/i);
+      const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+      const wavBytes = buildWavFromPcmChunks([rawBytes], sampleRate, 0);
+      return { wavBytes, pcmBytes: rawBytes, sampleRate, model: modelId };
+    }
+
+    async function synthesizeListeningWithGemini(ex, accent, onStatus) {
+      const cfg = getAiConfig();
+      const apiKey = (cfg.apiKey || '').trim();
+      if (!apiKey || cfg.provider !== 'gemini') {
+        const err = new Error('NEED_GEMINI_KEY');
+        err.code = 'NEED_GEMINI_KEY';
+        throw err;
+      }
+      if (onStatus) onStatus('Đang chọn model Gemini TTS...');
+      const models = await discoverGeminiTtsModels(apiKey);
+      const plan = buildIeltsSpeakerPlan(ex);
+      const planBySpeaker = new Map(plan.map(p => [p.speaker, p]));
+      const styleGuide = buildIeltsDeliveryStyle(ex, accent);
+      const speakersSummary = plan.map(p => `${p.voiceName} (${p.gender === 'female' ? 'Nữ' : 'Nam'})`).join(' • ');
+
+      const runWithFallback = async (fn) => {
+        let lastErr = null;
+        for (const mId of models.slice(0, 4)) {
+          try {
+            return await fn(mId);
+          } catch (e) {
+            lastErr = e;
+            if (e.status === 401 || e.status === 403) throw e;
+          }
+        }
+        throw lastErr || new Error('Không thể kết nối Gemini TTS.');
+      };
+
+      // Case 1: Single-speaker monologue (Section 2 / Section 4)
+      if (plan.length <= 1) {
+        const voiceName = (plan[0] && plan[0].voiceName) || 'Charon';
+        const fullScript = (ex.turns || []).map(t => formatTurnForIeltsSpeech(t.text)).join('\n\n');
+        const prompt = `${styleGuide}\nRead the following IELTS monologue verbatim with natural stress, pacing, and intonation. Do not add any commentary:\n\n${fullScript}`;
+        if (onStatus) onStatus(`Đang tạo Audio AI (${voiceName})...`);
+        const res = await runWithFallback((mId) => callGeminiTtsOnce(apiKey, mId, prompt, {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName } }
+        }));
+        return {
+          blob: new Blob([res.wavBytes], { type: 'audio/wav' }),
+          model: res.model,
+          speakersSummary
+        };
+      }
+
+      // Case 2: 2-speaker dialogue (Section 1 & Full Test Section 3) -> Native Multi-Speaker in 1 call (with turn-by-turn fallback)
+      if (plan.length === 2) {
+        const dialogueLines = (ex.turns || []).map(t => {
+          const info = planBySpeaker.get(String(t.speaker || '').trim()) || plan[0];
+          return `${info.apiTag}: ${formatTurnForIeltsSpeech(t.text)}`;
+        }).join('\n');
+        const prompt = `${styleGuide}\nPerform the following IELTS conversation verbatim between ${plan[0].apiTag} and ${plan[1].apiTag}. Keep realistic conversational flow and intonation:\n\n${dialogueLines}`;
+        if (onStatus) onStatus(`Đang tạo hội thoại AI (${plan[0].voiceName} & ${plan[1].voiceName})...`);
+        try {
+          const res = await runWithFallback((mId) => callGeminiTtsOnce(apiKey, mId, prompt, {
+            multiSpeakerVoiceConfig: {
+              speakerVoiceConfigs: plan.map(p => ({
+                speaker: p.apiTag,
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: p.voiceName } }
+              }))
+            }
+          }));
+          return {
+            blob: new Blob([res.wavBytes], { type: 'audio/wav' }),
+            model: res.model,
+            speakersSummary
+          };
+        } catch (multiErr) {
+          if (multiErr.status === 401 || multiErr.status === 403) throw multiErr;
+          // Graceful fallback to turn-by-turn synthesis below
+        }
+      }
+
+      // Case 3: 3-speaker academic tutorial (or fallback) -> Synthesize each turn with distinct voice & stitch PCM seamlessly
+      const pcmChunks = [];
+      let sampleRate = 24000;
+      let usedModel = models[0];
+      const turns = ex.turns || [];
+      for (let i = 0; i < turns.length; i++) {
+        const t = turns[i];
+        const info = planBySpeaker.get(String(t.speaker || '').trim()) || plan[0];
+        if (onStatus) onStatus(`Đang tạo lượt ${i + 1}/${turns.length} (${info.voiceName})...`);
+        const turnPrompt = `${styleGuide}\nSpeak this single dialogue line verbatim as ${info.speaker}, preserving natural conversational intonation:\n\n${formatTurnForIeltsSpeech(t.text)}`;
+        const res = await runWithFallback((mId) => callGeminiTtsOnce(apiKey, mId, turnPrompt, {
+          voiceConfig: { prebuiltVoiceConfig: { voiceName: info.voiceName } }
+        }));
+        usedModel = res.model;
+        sampleRate = res.sampleRate || 24000;
+        pcmChunks.push(res.pcmBytes);
+      }
+      const stitchedWav = buildWavFromPcmChunks(pcmChunks, sampleRate, 300);
+      return {
+        blob: new Blob([stitchedWav], { type: 'audio/wav' }),
+        model: usedModel,
+        speakersSummary
+      };
+    }
+
+    function triggerBlobDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function clearListeningAiAudioUI() {
+      activeListenAiRecord = null;
+      const wrap = document.getElementById('customListenAudioWrap');
+      const audioEl = document.getElementById('customListenAudioEl');
+      const dlBtn = document.getElementById('downloadAiListenAudioBtn');
+      const genLabel = document.getElementById('listenGenAiAudioLabel');
+      if (audioEl && audioEl.dataset.source !== 'manual') {
+        audioEl.pause();
+        audioEl.removeAttribute('src');
+        audioEl.dataset.source = '';
+        if (customListenBlobUrl) { URL.revokeObjectURL(customListenBlobUrl); customListenBlobUrl = null; }
+        if (wrap) wrap.classList.add('hidden');
+      }
+      if (dlBtn) dlBtn.classList.add('hidden');
+      if (genLabel) genLabel.textContent = 'Tạo Audio AI';
+    }
+
+    async function handleGenerateListeningAiAudio() {
+      const ex = LISTENING_EXERCISES.find(e => e.id === activeListeningId) || LISTENING_EXERCISES[0];
+      if (!ex) return;
+      const accent = document.getElementById('listenAccentSelect')?.value || appState.preferredAccent || 'en-GB';
+
+      const cfg = getAiConfig();
+      if (!cfg.apiKey || cfg.provider !== 'gemini') {
+        showToast('Cần nhập Google AI (Gemini) API Key để tạo Audio AI đa giọng.', 'warn');
+        openAiSettingsModal();
+        return;
+      }
+
+      const btn = document.getElementById('listenGenAiAudioBtn');
+      const label = document.getElementById('listenGenAiAudioLabel');
+      const statusBadge = document.getElementById('listeningStatusBadge');
+      if (btn) btn.disabled = true;
+      stopListeningPlayback();
+
+      try {
+        const result = await synthesizeListeningWithGemini(ex, accent, (msg) => {
+          if (label) label.textContent = msg;
+          if (statusBadge) statusBadge.textContent = msg;
+        });
+        if (activeListeningId !== ex.id) return;
+        activeListenAiRecord = {
+          exerciseId: ex.id,
+          accent,
+          model: result.model,
+          speakersSummary: result.speakersSummary,
+          blob: result.blob
+        };
+        const wrap = document.getElementById('customListenAudioWrap');
+        const audioEl = document.getElementById('customListenAudioEl');
+        const metaEl = document.getElementById('customListenAudioMeta');
+        const dlBtn = document.getElementById('downloadAiListenAudioBtn');
+        if (customListenBlobUrl) URL.revokeObjectURL(customListenBlobUrl);
+        customListenBlobUrl = URL.createObjectURL(result.blob);
+        if (audioEl) {
+          audioEl.dataset.source = 'ai';
+          audioEl.src = customListenBlobUrl;
+          audioEl.playbackRate = parseFloat(document.getElementById('listenSpeedSelect')?.value || '1') || 1.0;
+        }
+        if (wrap) wrap.classList.remove('hidden');
+        if (metaEl) metaEl.textContent = `✨ Audio AI (${accent.replace('en-', '')}) • ${result.speakersSummary || 'Đa giọng'}`;
+        if (dlBtn) dlBtn.classList.remove('hidden');
+        if (label) label.textContent = 'Tạo Audio AI';
+        if (statusBadge) statusBadge.textContent = 'Đang phát Audio AI...';
+
+        if (audioEl) {
+          audioEl.onended = () => {
+            if (statusBadge) statusBadge.textContent = 'Đã phát xong (Audio AI)';
+          };
+          audioEl.play().then(() => {
+            showToast(`Đang phát Audio AI (${result.speakersSummary})!`, 'success');
+          }).catch(() => {
+            if (statusBadge) statusBadge.textContent = 'Sẵn sàng (Audio AI)';
+            showToast('Đã tạo xong Audio AI — bấm nút ▶ để phát.', 'info');
+          });
+        }
+      } catch (err) {
+        if (label) label.textContent = 'Tạo Audio AI';
+        if (statusBadge) statusBadge.textContent = 'Sẵn sàng';
+        showToast(`Lỗi tạo Audio AI: ${err.message}`, 'error');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function renderListeningSelect() {
       const pool = getFilteredListeningExercises();
       const sel = document.getElementById('listeningExerciseSelect');
@@ -13970,6 +14366,8 @@
       listeningCurrentIdx = 0;
       if (listeningTimerId) { clearTimeout(listeningTimerId); listeningTimerId = null; }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      const customEl = document.getElementById('customListenAudioEl');
+      if (customEl && !customEl.paused) customEl.pause();
       document.getElementById('listeningStatusBadge').textContent = 'Đã dừng';
       document.getElementById('listeningActiveSpeaker').textContent = 'Nhân vật đang nói: —';
       updateListeningPauseBtn();
@@ -14186,6 +14584,14 @@
         });
       });
       window.updateListeningQuestionNav();
+      const audioEl = document.getElementById('customListenAudioEl');
+      if (audioEl && audioEl.dataset.source === 'manual') {
+        audioEl.pause();
+        audioEl.removeAttribute('src');
+        audioEl.dataset.source = '';
+        document.getElementById('customListenAudioWrap')?.classList.add('hidden');
+      }
+      clearListeningAiAudioUI();
     }
 
     // ==================== WRITING MODULE (TASK 1 + TASK 2 + DEEP ANALYZER) ====================
@@ -15125,6 +15531,8 @@
       mockListenStopFlag = true;
       if (mockListenTimerId) { clearTimeout(mockListenTimerId); mockListenTimerId = null; }
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      const ma = document.getElementById('mockCustomAudioEl');
+      if (ma && !ma.paused) ma.pause();
     }
     let mockTimerInterval = null;
     let mockSecondsLeft = 60 * 60;
@@ -15303,12 +15711,20 @@
             <button type="button" id="mockPlaySecBtn" ${played && !mockListSubmitted ? 'disabled' : ''} class="px-4 py-2 rounded-xl ${played && !mockListSubmitted ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-brand-500 hover:bg-brand-600 text-white'} text-xs sm:text-sm font-bold">
               ${mockListSubmitted ? '▶ Nghe lại đối chiếu' : played ? '✓ Đã phát 1/1 lượt (Thi thật)' : '▶ Phát Section ' + (mockListSecIdx + 1) + ' (1 lượt duy nhất)'}
             </button>
+            <button type="button" id="mockGenAiAudioBtn" class="px-2.5 py-2 rounded-xl bg-indigo-500/25 hover:bg-indigo-500/40 border border-indigo-400/60 text-indigo-100 text-xs font-bold inline-flex items-center gap-1" title="Tạo Audio AI đa giọng cho Section này và phát ngay">
+              ✨ <span id="mockGenAiAudioLabel">Audio AI</span>
+            </button>
+            <button type="button" id="mockDownloadAiAudioBtn" class="hidden px-2.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 text-xs font-bold" title="Tải file Audio AI (.wav)">⬇ WAV</button>
             <label class="cursor-pointer px-2.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-400/50 text-emerald-200 text-xs font-bold inline-flex items-center gap-1" title="Nạp file MP3/M4A thật cho Section này">
               🎵 MP3/M4A
               <input id="mockCustomAudioInput" type="file" accept="audio/*" class="hidden" />
             </label>
             <button type="button" id="mockStopAudioBtn" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold">Dừng</button>
           </div>
+        </div>
+        <div id="mockAiAudioBanner" class="hidden flex items-center justify-between gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 text-xs text-indigo-900">
+          <span id="mockAiAudioMeta" class="font-bold">✨ Đang phát Audio AI đa giọng</span>
+          <span class="text-[11px] text-indigo-700 font-semibold">Phát trực tiếp (không lưu offline)</span>
         </div>
         <audio id="mockCustomAudioEl" controls playsinline class="hidden w-full h-10"></audio>
         ${cur.mapHtml ? cur.mapHtml : ''}
@@ -15355,9 +15771,95 @@
         }
       });
 
+      const mockAudioEl = document.getElementById('mockCustomAudioEl');
+      const mockGenBtn = document.getElementById('mockGenAiAudioBtn');
+      const mockGenLabel = document.getElementById('mockGenAiAudioLabel');
+      const mockDlBtn = document.getElementById('mockDownloadAiAudioBtn');
+      const mockAiBanner = document.getElementById('mockAiAudioBanner');
+      const mockAiMeta = document.getElementById('mockAiAudioMeta');
+      const mockAccent = appState.preferredAccent || 'en-GB';
+      activeMockAiRecord = null;
+      if (mockCustomBlobUrl) { URL.revokeObjectURL(mockCustomBlobUrl); mockCustomBlobUrl = null; }
+
+      if (mockGenBtn) {
+        mockGenBtn.addEventListener('click', async () => {
+          const cfg = getAiConfig();
+          if (!cfg.apiKey || cfg.provider !== 'gemini') {
+            showToast('Cần nhập Google AI (Gemini) API Key để tạo Audio AI đa giọng.', 'warn');
+            openAiSettingsModal();
+            return;
+          }
+          mockGenBtn.disabled = true;
+          stopMockListeningAudio();
+          try {
+            const res = await synthesizeListeningWithGemini(cur, mockAccent, (msg) => {
+              if (mockGenLabel) mockGenLabel.textContent = msg;
+            });
+            activeMockAiRecord = { exerciseId: cur.id, accent: mockAccent, blob: res.blob, speakersSummary: res.speakersSummary };
+            if (mockCustomBlobUrl) URL.revokeObjectURL(mockCustomBlobUrl);
+            mockCustomBlobUrl = URL.createObjectURL(res.blob);
+            if (mockAudioEl) {
+              mockAudioEl.src = mockCustomBlobUrl;
+              mockAudioEl.dataset.source = 'ai';
+              mockAudioEl.currentTime = 0;
+              if (mockListSubmitted) mockAudioEl.classList.remove('hidden');
+            }
+            if (mockGenLabel) mockGenLabel.textContent = 'Audio AI';
+            if (mockDlBtn) mockDlBtn.classList.remove('hidden');
+            if (mockAiBanner) mockAiBanner.classList.remove('hidden');
+            if (mockAiMeta) mockAiMeta.textContent = `✨ Audio AI (${mockAccent.replace('en-', '')}) • ${res.speakersSummary || 'Đa giọng'}`;
+
+            const pBtn = document.getElementById('mockPlaySecBtn');
+            if (!mockListSubmitted && pBtn) {
+              mockListPlayed[cur.id] = true;
+              pBtn.disabled = true;
+              pBtn.textContent = 'Đang phát Audio AI (1/1 lượt)...';
+              pBtn.className = 'px-4 py-2 rounded-xl bg-amber-500 text-white text-xs sm:text-sm font-bold';
+            }
+            if (mockAudioEl) {
+              mockAudioEl.onended = () => {
+                if (!mockListSubmitted && pBtn) pBtn.textContent = '✓ Đã phát xong 1/1 lượt';
+              };
+              mockAudioEl.play().then(() => {
+                showToast(`Đang phát Audio AI Section ${mockListSecIdx + 1} (${res.speakersSummary})!`, 'success');
+              }).catch(() => {
+                if (mockAudioEl) mockAudioEl.classList.remove('hidden');
+                showToast('Đã tạo xong Audio AI — bấm ▶ trên thanh phát để nghe.', 'info');
+              });
+            }
+          } catch (err) {
+            if (mockGenLabel) mockGenLabel.textContent = 'Audio AI';
+            showToast(`Lỗi tạo Audio AI: ${err.message}`, 'error');
+          } finally {
+            mockGenBtn.disabled = false;
+          }
+        });
+      }
+      if (mockDlBtn) {
+        mockDlBtn.addEventListener('click', () => {
+          if (!activeMockAiRecord || !activeMockAiRecord.blob) return;
+          triggerBlobDownload(activeMockAiRecord.blob, `ielts-mock-${cur.id}-${mockAccent}.wav`);
+        });
+      }
+
       const playBtn = document.getElementById('mockPlaySecBtn');
       if (playBtn) {
         playBtn.addEventListener('click', () => {
+          if (mockAudioEl && mockAudioEl.src && mockAudioEl.dataset.source === 'ai') {
+            if (!mockListSubmitted) {
+              mockListPlayed[cur.id] = true;
+              playBtn.disabled = true;
+              playBtn.textContent = 'Đang phát Audio AI (1/1 lượt)...';
+              playBtn.className = 'px-4 py-2 rounded-xl bg-amber-500 text-white text-xs sm:text-sm font-bold';
+            }
+            stopMockListeningAudio();
+            mockAudioEl.currentTime = 0;
+            mockAudioEl.onended = () => {
+              if (!mockListSubmitted) playBtn.textContent = '✓ Đã phát xong 1/1 lượt';
+            };
+            mockAudioEl.play().catch(() => {});
+            return;
+          }
           if (!('speechSynthesis' in window)) { showToast('Trình duyệt không hỗ trợ giọng đọc.', 'warn'); return; }
           if (!mockListSubmitted) {
             mockListPlayed[cur.id] = true;
@@ -15413,7 +15915,6 @@
         });
       }
       const mockAudioIn = document.getElementById('mockCustomAudioInput');
-      const mockAudioEl = document.getElementById('mockCustomAudioEl');
       if (mockAudioIn && mockAudioEl) {
         mockAudioIn.addEventListener('change', (e) => {
           const f = e.target.files && e.target.files[0];
@@ -16922,7 +17423,6 @@
         activeListeningId = e.target.value;
         renderListeningExercise();
       });
-      let customListenBlobUrl = null;
       const customAudioInput = document.getElementById('customListenAudioInput');
       const customAudioWrap = document.getElementById('customListenAudioWrap');
       const customAudioEl = document.getElementById('customListenAudioEl');
@@ -16934,9 +17434,13 @@
           stopListeningPlayback();
           if (customListenBlobUrl) URL.revokeObjectURL(customListenBlobUrl);
           customListenBlobUrl = URL.createObjectURL(f);
+          customAudioEl.dataset.source = 'manual';
           customAudioEl.src = customListenBlobUrl;
           customAudioEl.playbackRate = parseFloat(document.getElementById('listenSpeedSelect').value) || 1.0;
           customAudioWrap.classList.remove('hidden');
+          const metaEl = document.getElementById('customListenAudioMeta');
+          if (metaEl) metaEl.textContent = `🎵 Audio tải lên: ${f.name.slice(0, 28)}`;
+          document.getElementById('downloadAiListenAudioBtn')?.classList.add('hidden');
           document.getElementById('listeningStatusBadge').textContent = `Audio thật: ${f.name.slice(0, 22)}`;
           showToast(`Đã nạp tệp audio thật "${f.name}"!`, 'success');
           e.target.value = '';
@@ -16944,16 +17448,34 @@
         document.getElementById('listenSpeedSelect').addEventListener('change', (e) => {
           if (customAudioEl && customAudioEl.src) customAudioEl.playbackRate = parseFloat(e.target.value) || 1.0;
         });
+        document.getElementById('listenAccentSelect').addEventListener('change', () => {
+          clearListeningAiAudioUI();
+        });
         if (clearCustomAudioBtn) {
           clearCustomAudioBtn.addEventListener('click', () => {
             customAudioEl.pause();
             customAudioEl.removeAttribute('src');
+            customAudioEl.dataset.source = '';
             customAudioWrap.classList.add('hidden');
-            document.getElementById('listeningStatusBadge').textContent = 'Sẵn sàng (TTS)';
+            document.getElementById('listeningStatusBadge').textContent = 'Sẵn sàng (Web Speech)';
           });
         }
       }
-      document.getElementById('listenPlayBtn').addEventListener('click', () => playListeningDialogue(0));
+      document.getElementById('listenGenAiAudioBtn')?.addEventListener('click', () => handleGenerateListeningAiAudio());
+      document.getElementById('downloadAiListenAudioBtn')?.addEventListener('click', () => {
+        if (!activeListenAiRecord || !activeListenAiRecord.blob) return;
+        triggerBlobDownload(activeListenAiRecord.blob, `ielts-listening-${activeListenAiRecord.exerciseId}-${activeListenAiRecord.accent}.wav`);
+      });
+      document.getElementById('listenPlayBtn').addEventListener('click', () => {
+        if (customAudioEl && customAudioEl.src && customAudioWrap && !customAudioWrap.classList.contains('hidden')) {
+          customAudioEl.playbackRate = parseFloat(document.getElementById('listenSpeedSelect').value) || 1.0;
+          customAudioEl.currentTime = 0;
+          customAudioEl.play().catch(() => {});
+          document.getElementById('listeningStatusBadge').textContent = 'Đang phát Audio AI...';
+          return;
+        }
+        playListeningDialogue(0);
+      });
       document.getElementById('listenPauseBtn').addEventListener('click', togglePauseListening);
       document.getElementById('listenStopBtn').addEventListener('click', stopListeningPlayback);
       document.getElementById('toggleTranscriptBtn').addEventListener('click', () => {
