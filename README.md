@@ -4,10 +4,10 @@ Gói mã nguồn hoàn chỉnh để triển khai trực tiếp lên **GitHub Pa
 
 ## Kho nội dung học thuật
 - **260 Collocations** phân 3 chặng (Band 5.0–6.0 → 6.5–7.0 → 7.5–8.5+) kèm thuật toán lặp lại ngắt quãng **SM-2 SRS**, 35 câu điền từ ngữ cảnh 40 câu Nâng Band (tự động xáo trộn) và **40 cặp Bảng Paraphrase học thuật Reading/Listening**.
-- **15 chuyên đề Ngữ pháp** (150 bài tập có giải thích chi tiết, xáo trộn đáp án trắc nghiệm, tự lưu nháp & nút Làm lại).
+- **20 chuyên đề Ngữ pháp** (200 bài tập có giải thích chi tiết, xáo trộn đáp án trắc nghiệm, tự lưu nháp & nút Làm lại).
 - **21 bài Reading Academic (gồm YNNG, Matching Features & **6 bài Full-Length** cho 2 đề thi 40 câu)** (14 Mini-Passages 10 phút + **2 bài Full-Length chuẩn 20 phút / 13 câu hỏi**), giao diện chia đôi 50/50, thanh số câu + cờ Review, thanh Bôi vàng & Tra từ nổi tối ưu cho iPhone/iPad.
 - **23 bài Listening** (156 câu hỏi, gồm Map Labelling, Matching Opinions, hỗ trợ **nạp file audio MP3/M4A thật** & **2 bộ Full 40 câu thật**) hội thoại 2 vai có bảng giải mã Paraphrase & Distractor, hỗ trợ Tạm dừng/Tiếp tục, chạm từng câu Transcript để nghe lại và đồng bộ 3 giọng chuẩn IELTS (UK / AU / US).
-- **23 đề Writing** (11 Task 1 gồm cả Mixed Charts có biểu đồ/bảng/quy trình/bản đồ + 12 Task 2), khung thi 50/50 chuẩn CD-IELTS, tắt spellcheck như thi thật, đếm từ góc phải, chấm nhanh Offline và tùy chọn **Chấm AI chuyên sâu (Gemini API Key cá nhân)**.
+- **25 đề Writing** (13 Task 1 gồm cả Mixed Charts có biểu đồ/bảng/quy trình/bản đồ + 12 Task 2), khung thi 50/50 chuẩn CD-IELTS, tắt spellcheck như thi thật, đếm từ góc phải, chấm nhanh Offline và tùy chọn **Chấm AI chuyên sâu (Gemini API Key cá nhân)**.
 - **12 bộ Speaking chuẩn 3 Part** (36 câu Part 1 + 12 Cue Card Part 2 kèm bài mẫu Band 8.0+ đủ độ dài 2 phút (~220–250 từ) + 36 câu Part 3), giọng Giám khảo đọc câu hỏi, ghi âm tương thích iOS (`audio/mp4`), tải bản ghi và phân tích tốc độ nói (WPM) + từ đệm.
 - **Bài Đánh giá Năng lực Mở rộng (24 câu)** với 2 chế độ (16 câu xoay vòng / 12 phút hoặc 24 câu đầy đủ / 18 phút), 4 lựa chọn xáo trộn, giới hạn 2 lượt nghe, chữa bài chi tiết + mở Transcript và lưu lịch sử tiến bộ.
 - **Phòng Thi thử Full-Length (Mock Test Center):** 2 bộ đề thi thử trọn vẹn (Reading Full 60 phút / 3 Passages / 40 câu, Listening Full 30 phút / 4 Sections đủ 40 câu thật nghe 1 lượt kèm 30s đọc đề, Writing Full 60 phút Part 1 + Part 2 tính trọng số 1/3–2/3) kèm Phiếu Báo Điểm TRF và lịch sử thi.
