@@ -3,20 +3,20 @@
 Gói mã nguồn hoàn chỉnh để triển khai trực tiếp lên **GitHub Pages**, cài đặt thành **Web App (PWA) trên màn hình chính iPhone/iPad (iOS)** và chạy mượt trên máy tính với giao diện mô phỏng phòng thi **Computer-Delivered IELTS (CD-IELTS)**.
 
 ## Kho nội dung học thuật
-- **260 Collocations** phân 3 chặng (Band 5.0–6.0 → 6.5–7.0 → 7.5–8.5+) kèm thuật toán lặp lại ngắt quãng **SM-2 SRS**, 35 câu điền từ ngữ cảnh 40 câu Nâng Band (tự động xáo trộn) và **40 cặp Bảng Paraphrase học thuật Reading/Listening**.
-- **20 chuyên đề Ngữ pháp** (200 bài tập có giải thích chi tiết, xáo trộn đáp án trắc nghiệm, tự lưu nháp & nút Làm lại).
-- **22 bài Reading Academic (gồm YNNG, Matching Features & **6 bài Full-Length** cho 2 đề thi 40 câu)** (14 Mini-Passages 10 phút + **2 bài Full-Length chuẩn 20 phút / 13 câu hỏi**), giao diện chia đôi 50/50, thanh số câu + cờ Review, thanh Bôi vàng & Tra từ nổi tối ưu cho iPhone/iPad.
-- **23 bài Listening** (156 câu hỏi, gồm Map Labelling, Matching Opinions, hỗ trợ **nạp file audio MP3/M4A thật** & **2 bộ Full 40 câu thật**) hội thoại 2 vai có bảng giải mã Paraphrase & Distractor, hỗ trợ Tạm dừng/Tiếp tục, chạm từng câu Transcript để nghe lại và đồng bộ 3 giọng chuẩn IELTS (UK / AU / US).
+- **281 Collocations** phân 4 chặng (<5.0 → 5.0–6.0 → 6.5–7.0 → 7.5–8.5+) kèm thuật toán lặp lại ngắt quãng **SM-2 SRS**, 35 câu điền từ ngữ cảnh + điền từ động, 40 câu Nâng Band (tự động xáo trộn), phòng Ghép Collocation và **52 cặp Bảng Paraphrase học thuật Reading/Listening**.
+- **27 chuyên đề Ngữ pháp** (256 bài tập có giải thích chi tiết, phòng Nâng cấp câu, phòng Sửa lỗi đoạn văn, xáo trộn đáp án trắc nghiệm, tự lưu nháp & nút Làm lại).
+- **33 bài Reading Academic (247 câu hỏi, gồm đầy đủ 12 dạng bài, 6 bài cầu nối <5.0 và 9 bài Full-Length cho 3 đề thi 40 câu)**, giao diện chia đôi 50/50, thanh số câu + cờ Review, thanh Bôi vàng & Tra từ nổi tối ưu cho iPhone/iPad.
+- **160 bài Listening** (1.132 câu hỏi + **18 bộ Full Listening Test 40 câu = 720 câu**, gồm Map Labelling, Matching Opinions, hỗ trợ **nạp file audio MP3/M4A thật**) hội thoại 2 vai có bảng giải mã Paraphrase & Distractor, hỗ trợ Tạm dừng/Tiếp tục, chạm từng câu Transcript để nghe lại và đồng bộ 3 giọng chuẩn IELTS (UK / AU / US).
 - **25 đề Writing** (13 Task 1 gồm cả Mixed Charts có biểu đồ/bảng/quy trình/bản đồ + 12 Task 2), khung thi 50/50 chuẩn CD-IELTS, tắt spellcheck như thi thật, đếm từ góc phải, chấm nhanh Offline và tùy chọn **Chấm AI chuyên sâu (Gemini API Key cá nhân)**.
 - **12 bộ Speaking chuẩn 3 Part** (36 câu Part 1 + 12 Cue Card Part 2 kèm bài mẫu Band 8.0+ đủ độ dài 2 phút (~220–250 từ) + 36 câu Part 3), giọng Giám khảo đọc câu hỏi, ghi âm tương thích iOS (`audio/mp4`), tải bản ghi và phân tích tốc độ nói (WPM) + từ đệm.
 - **Bài Đánh giá Năng lực Mở rộng (24 câu)** với 2 chế độ (16 câu xoay vòng / 12 phút hoặc 24 câu đầy đủ / 18 phút), 4 lựa chọn xáo trộn, giới hạn 2 lượt nghe, chữa bài chi tiết + mở Transcript và lưu lịch sử tiến bộ.
-- **Phòng Thi thử Full-Length (Mock Test Center):** 2 bộ đề thi thử trọn vẹn (Reading Full 60 phút / 3 Passages / 40 câu, Listening Full 30 phút / 4 Sections đủ 40 câu thật nghe 1 lượt kèm 30s đọc đề, Writing Full 60 phút Part 1 + Part 2 tính trọng số 1/3–2/3) kèm Phiếu Báo Điểm TRF và lịch sử thi.
+- **Phòng Thi thử Full-Length (Mock Test Center):** 3 bộ đề thi thử trọn vẹn (Reading Full 60 phút / 3 Passages / 40 câu, Listening Full 30 phút / 4 Sections đủ 40 câu thật nghe 1 lượt kèm 30s đọc đề, Writing Full 60 phút Part 1 + Part 2 tính trọng số 1/3–2/3) kèm Phiếu Báo Điểm TRF và lịch sử thi.
 - **Tiện ích đi kèm:** 3 chế độ giao diện riêng biệt (**Web** mặc định / **iPad** / **iPhone**), Chuỗi ngày học (**Study Streak**), Daily XP tự reset mỗi ngày, Sổ lỗi sai, Mini Từ điển (Alt+D), Dark Mode đồng bộ biểu đồ & thanh trạng thái iOS, và Cổng Quản trị viên.
 
 ## Cấu trúc thư mục
 - `index.html`: Toàn bộ ứng dụng IELTS Mastery Studio.
 - `manifest.json`: Tệp cấu hình PWA chuẩn cho iOS, Android và máy tính.
-- `sw.js`: Service Worker (`v14`) hỗ trợ lưu bộ đệm ngoại tuyến cả mã nguồn lẫn thư viện giao diện/biểu đồ.
+- `sw.js`: Service Worker (`v55`) hỗ trợ lưu bộ đệm ngoại tuyến cả mã nguồn lẫn thư viện giao diện/biểu đồ.
 - `icons/`: Bộ biểu tượng ứng dụng chuẩn (`apple-touch-icon.png` 180x180 cho iOS, `icon-192.png`, `icon-512.png`, `icon.svg`).
 - `.nojekyll`: Đảm bảo GitHub Pages phục vụ tệp tĩnh trực tiếp không qua Jekyll.
 
@@ -69,3 +69,9 @@ Gói mã nguồn hoàn chỉnh để triển khai trực tiếp lên **GitHub Pa
 - Vá bộ chấm **Điền từ động (286 thẻ)** để chấm chính xác theo câu sinh động thay vì mảng 35 câu cũ.
 - Vá nút **`+ SRS` trên thanh chọn nổi iOS** đọc toàn văn cụm từ (không cắt 42 ký tự) và đồng bộ thẳng vào **My Deck SRS**.
 - Đồng bộ sạch toàn bộ số liệu hiển thị (286 cụm từ, 52 cặp Paraphrase) và hoàn thiện tương phản Dark Mode cho cả 5 phòng luyện mới.
+
+### Bản vá lỗi & hoàn thiện v55 (QA Bug-Fix Release)
+- **Vá P0 Mock Test 3 Reading & Mock Test 2 Writing:** Bổ sung dựng giao diện, bắt sự kiện và chấm điểm cho 2 dạng `checkbox` (Choose TWO) và `wordbank` trong `renderMockReading()`; vá lỗi `.trim()` trên mảng ở thanh điều hướng câu; sửa lỗi `type: 'mixed'` làm crash Chart.js và hiển thị đầy đủ bảng số liệu cho đề Mixed Chart (`wt1-11`).
+- **Vá P1 Mock Writing Task 2, AI Reading & Guided Highlight:** Cập nhật 3 cặp đề Writing Task 1 & Task 2 riêng biệt, hợp lệ cho cả 3 Mock Test (`wt1-1/w2`, `wt1-11/w6`, `wt1-12/w12`); sửa lỗi ánh xạ `evidenceId` trong bộ tạo bài đọc AI; nâng cấp `highlightEvidenceV48` hỗ trợ tô sáng câu dẫn chứng xuyên qua thẻ `<span>` ở Guided Mode.
+- **Vá P2 Giao diện & Nội dung:** Thêm tương phản Dark Mode cho `.evidence-highlight`; sửa vỡ lưới 2 cột khi đổi tỷ lệ 60/40–40/60 trên iPad; gỡ 7 đáp án bị lộ trong `VOCAB_FILL_DRILLS` (`vf26`–`vf35`), xóa 5 Collocation trùng lặp trong `VOCAB_DATA` (còn 281 cụm chuẩn), và đồng bộ 7 `evidenceQuote` khớp nguyên văn đoạn văn.
+- **Đồng bộ P3:** Cập nhật thống nhất số liệu trên toàn bộ UI, `manifest.json`, `README.md`, dọn mã DOM thừa và nâng bộ đệm `sw.js` lên `ielts-mastery-v55`.

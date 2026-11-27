@@ -359,12 +359,24 @@
       opacity: 0.75;
       user-select: none;
     }
+    body.dark-mode .evidence-highlight {
+      background-color: rgba(250, 204, 21, 0.22) !important;
+      color: #fef9c3 !important;
+      box-shadow: 0 0 0 2px #eab308;
+    }
+    body.dark-mode .evidence-highlight * { color: inherit; }
     /* Resizable split ratios on Web & iPad */
     @media (min-width: 1024px) {
       #readingSplitGrid.split-40-60 .ielts-split-left { grid-column: span 5 / span 5 !important; }
       #readingSplitGrid.split-40-60 .ielts-split-right { grid-column: span 7 / span 7 !important; }
       #readingSplitGrid.split-60-40 .ielts-split-left { grid-column: span 7 / span 7 !important; }
       #readingSplitGrid.split-60-40 .ielts-split-right { grid-column: span 5 / span 5 !important; }
+      body[data-layout="ipad"] #readingSplitGrid.split-40-60 { grid-template-columns: 4fr 6fr !important; }
+      body[data-layout="ipad"] #readingSplitGrid.split-60-40 { grid-template-columns: 6fr 4fr !important; }
+      body[data-layout="ipad"] #readingSplitGrid.split-40-60 .ielts-split-left,
+      body[data-layout="ipad"] #readingSplitGrid.split-40-60 .ielts-split-right,
+      body[data-layout="ipad"] #readingSplitGrid.split-60-40 .ielts-split-left,
+      body[data-layout="ipad"] #readingSplitGrid.split-60-40 .ielts-split-right { grid-column: span 1 / span 1 !important; }
     }
     /* iPhone portrait split ratio overrides */
     body[data-layout="iphone"] #readingSplitGrid.iphone-read-60 .ielts-split-left { height: 50dvh !important; }
@@ -606,7 +618,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="space-y-1.5 max-w-2xl">
             <div class="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-xs font-semibold">
-              <i data-lucide="compass" class="w-3.5 h-3.5"></i> CD-IELTS Studio • 2 Đề Thi thử Full 40R+40L • Auto-AI &amp; SM-2 SRS
+              <i data-lucide="compass" class="w-3.5 h-3.5"></i> CD-IELTS Studio • 3 Đề Thi thử Full 40R+40L • Auto-AI &amp; SM-2 SRS
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Lộ trình Chinh phục IELTS của bạn</h1>
             <p class="text-indigo-100 text-sm sm:text-base">
@@ -669,7 +681,7 @@
           </div>
           <div class="mt-2 flex items-baseline gap-2">
             <span id="kpiVocabMastered" class="text-3xl font-extrabold text-slate-900">0</span>
-            <span class="text-xs text-slate-500">/ <span id="kpiVocabTotal">260</span> từ (5.0–8.5+)</span>
+            <span class="text-xs text-slate-500">/ <span id="kpiVocabTotal">281</span> từ (&lt;5.0–8.5+)</span>
           </div>
           <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
             <div id="kpiVocabBar" class="bg-amber-500 h-full rounded-full transition-all" style="width: 0%"></div>
@@ -929,7 +941,7 @@
     <section id="tab-vocab" class="tab-panel space-y-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200">
         <div>
-          <h2 class="text-xl font-extrabold text-slate-900">Kho Từ vựng IELTS 4 Chặng (&lt;5.0 → 8.5+ • 286 Cụm)</h2>
+          <h2 class="text-xl font-extrabold text-slate-900">Kho Từ vựng IELTS 4 Chặng (&lt;5.0 → 8.5+ • 281 Cụm)</h2>
           <p class="text-sm text-slate-500">Học đúng tầng trình độ (Nền tảng 5.0–6.0 → Tăng tốc 6.5–7.0 → Bứt phá 7.5–8.5+) kèm SRS và luyện điền từ vào câu.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -1082,7 +1094,7 @@
           <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-bold text-slate-900">Hàng đợi ôn tập</h3>
-              <span id="vocabListCount" class="text-xs text-slate-500 font-medium">286 từ</span>
+              <span id="vocabListCount" class="text-xs text-slate-500 font-medium">281 từ</span>
             </div>
             <input id="vocabSearchInput" type="text" placeholder="Tìm nhanh từ vựng hoặc nghĩa tiếng Việt..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500" />
             <details id="customVocabAddBox" class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5 text-xs">
@@ -1122,7 +1134,7 @@
           <div class="flex items-center gap-2">
             <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Chủ động gõ từ (Band 5.5–6.5)</span>
             <span id="fillProgressBadge" class="text-xs font-semibold text-slate-500">Câu 1 / 12</span>
-            <button type="button" id="toggleDynamicFillBtn" class="px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-800 text-[11px] font-bold" title="Sinh câu điền từ tự động từ toàn bộ 286 thẻ Band 8.0+">⚡ Điền từ động (286 thẻ): TẮT</button>
+            <button type="button" id="toggleDynamicFillBtn" class="px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-800 text-[11px] font-bold" title="Sinh câu điền từ tự động từ toàn bộ 281 thẻ Band 8.0+">⚡ Điền từ động (281 thẻ): TẮT</button>
           </div>
           <span id="fillScoreBadge" class="text-xs font-bold text-brand-700 bg-brand-50 px-3 py-1 rounded-full">Đúng: 0 / 0</span>
         </div>
@@ -1150,7 +1162,7 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <select id="paraCategorySelect" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
-              <option value="all">Mọi nhóm (40 cặp)</option>
+              <option value="all">Mọi nhóm (52 cặp)</option>
               <option value="Xu hướng & Số liệu">Xu hướng &amp; Số liệu</option>
               <option value="Chính sách & Quy định">Chính sách &amp; Quy định</option>
               <option value="Nghiên cứu & Bằng chứng">Nghiên cứu &amp; Bằng chứng</option>
@@ -1417,7 +1429,7 @@
           <div class="flex flex-wrap items-center gap-2 flex-1">
             <label class="font-bold text-slate-600 shrink-0" for="rFilterBandSelect">Lọc nhanh:</label>
             <select id="rFilterBandSelect" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 font-bold text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
-              <option value="all">Tất cả trình độ (32 bài)</option>
+              <option value="all">Tất cả trình độ (33 bài)</option>
               <option value="starter">🌱 Mất gốc &lt;5.0–5.5 (6 bài)</option>
               <option value="foundation">📘 Nền tảng 5.0–6.5</option>
               <option value="advanced">🔥 Nâng cao 7.0–8.5+</option>
@@ -1845,7 +1857,7 @@
           <div>
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full">Trụ cột 1 • Micro-Listening</span>
             <h3 class="text-lg font-extrabold text-slate-900 mt-1">Chế độ Nghe Chép Chính Tả (Word-Level Diff)</h3>
-            <p class="text-xs text-slate-500">Luyện bắt nối âm, âm cuối <code>-s/-ed</code> và weak forms ngay trên từng câu của 23 bài IELTS.</p>
+            <p class="text-xs text-slate-500">Luyện bắt nối âm, âm cuối <code>-s/-ed</code> và weak forms ngay trên từng câu của 160 bài IELTS.</p>
           </div>
           <div class="flex items-center gap-2">
             <span id="dictationTurnBadge" class="text-xs font-extrabold px-3 py-1 rounded-full bg-slate-900 text-white">Câu 1 / 1</span>
@@ -2040,7 +2052,7 @@
           <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-1.5">
             <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Bước 4 • Ghép đề</span>
             <h5 class="text-xs font-extrabold text-slate-900">Full Test khi đạt ngưỡng 6.5 (27–28/40)</h5>
-            <p class="text-[11px] text-slate-600 leading-relaxed">Bấm giờ 2–3 đề/tuần (ưu tiên Cambridge 10–19 &amp; 2 Mock Test trong app) để rèn sức bền 30 phút và nhịp chuyển section.</p>
+            <p class="text-[11px] text-slate-600 leading-relaxed">Bấm giờ 2–3 đề/tuần (ưu tiên Cambridge 10–19 &amp; 3 Mock Test trong app) để rèn sức bền 30 phút và nhịp chuyển section.</p>
           </div>
         </div>
 
@@ -2980,7 +2992,7 @@
           <h3 class="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-1.5">
             <i data-lucide="book-a" class="w-5 h-5 text-brand-600"></i> Mini Từ điển Tra cứu IELTS
           </h3>
-          <p class="text-[11px] text-slate-500">Tra tức thì trong kho 286 Collocations hoặc tra từ tiếng Anh bất kỳ (Phím tắt: Alt+D).</p>
+          <p class="text-[11px] text-slate-500">Tra tức thì trong kho 281 Collocations hoặc tra từ tiếng Anh bất kỳ (Phím tắt: Alt+D).</p>
         </div>
         <button type="button" id="closeDictBtn" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Đóng Từ điển">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -3383,11 +3395,8 @@
       { id: 'v119', topic: 'Science', register: 'Writing (Formal)', word: 'scientific consensus', ipa: '/ˌsaɪ.ənˈtɪf.ɪk kənˈsen.səs/', band: 'Band 8.0', meaning: 'sự đồng thuận trong giới khoa học', wordFamily: 'consensus (n)', commonMistake: 'Danh từ không đếm được — dùng "a broad scientific consensus".', band5: 'Almost all scientists agree that Earth is getting warmer.', band8: 'There is an overwhelming scientific consensus that human activity drives modern warming.' },
       { id: 'v120', topic: 'Tourism', register: 'Speaking (Natural)', word: 'travel light', ipa: '/ˈtræv.əl laɪt/', band: 'Band 6.5', meaning: 'đi du lịch gọn nhẹ (mang ít hành lý)', wordFamily: 'carry-on luggage (n)', commonMistake: 'Không thêm "-ly" ("travel light", không phải "travel lightly").', band5: 'I only bring one small backpack when I go on trips.', band8: 'I always prefer to travel light with just a single carry-on backpack so I can move freely.' },
       // === +20 CHẶNG 1 (BAND 5.5–6.0) VERB + NOUN COLLOCATIONS CỐT LÕI ===
-      { id: 'v121', topic: 'General', register: 'Both (Academic & Spoken)', word: 'make a decision', ipa: '/meɪk ə dɪˈsɪʒ.ən/', band: 'Band 5.5', meaning: 'đưa ra quyết định', wordFamily: 'decide (v) • decisive (adj)', commonMistake: 'Tuyệt đối không viết "do a decision" — luôn dùng "make a decision".', band5: 'Students need help to choose their university major.', band8: 'Career counseling helps teenagers make an informed decision about their university major.' },
-      { id: 'v122', topic: 'General', register: 'Both (Academic & Spoken)', word: 'solve a problem', ipa: '/sɒlv ə ˈprɒb.ləm/', band: 'Band 5.5', meaning: 'giải quyết một vấn đề', wordFamily: 'solution (n) • tackle / address (Band 7.0+)', commonMistake: 'Tránh viết "solve a challenge/issue" ở mức cơ bản; "solve" đi chuẩn nhất với "problem".', band5: 'Governments must fix traffic jams quickly.', band8: 'Building better subway lines is a practical way to solve the problem of urban congestion.' },
       { id: 'v123', topic: 'General', register: 'Both (Academic & Spoken)', word: 'play an important role', ipa: '/pleɪ ən ɪmˈpɔː.tənt rəʊl/', band: 'Band 5.5', meaning: 'đóng một vai trò quan trọng', wordFamily: 'pivotal / crucial role (Band 7.5+)', commonMistake: 'Luôn đi với giới từ "IN" (play an important role IN shaping society).', band5: 'Parents are very important for a child’s habits.', band8: 'Parents play an important role in shaping children’s early reading habits.' },
       { id: 'v124', topic: 'General', register: 'Both (Academic & Spoken)', word: 'take responsibility for', ipa: '/teɪk rɪˌspɒn.səˈbɪl.ə.ti fɔː/', band: 'Band 6.0', meaning: 'chịu trách nhiệm cho việc gì', wordFamily: 'responsible (adj) • accountable (adj)', commonMistake: 'Dùng "take / bear responsibility FOR" (không dùng "do responsibility").', band5: 'Companies must be responsible for factory waste.', band8: 'Corporations must take responsibility for the plastic waste their products create.' },
-      { id: 'v125', topic: 'General', register: 'Both (Academic & Spoken)', word: 'pay attention to', ipa: '/peɪ əˈten.ʃən tuː/', band: 'Band 5.5', meaning: 'chú ý, quan tâm đến', wordFamily: 'attentive (adj)', commonMistake: 'Luôn đi với "pay" và giới từ "TO" (không viết "give attention for").', band5: 'Drivers must look carefully at road signs.', band8: 'Governments should pay greater attention to mental health support in secondary schools.' },
       { id: 'v126', topic: 'General', register: 'Both (Academic & Spoken)', word: 'have a negative impact on', ipa: '/hæv ə ˈneɡ.ə.tɪv ˈɪm.pækt ɒn/', band: 'Band 6.0', meaning: 'gây ra tác động tiêu cực lên', wordFamily: 'impactful (adj) • exert an impact (Band 8.0)', commonMistake: 'Luôn đi với giới từ "ON" (không dùng "to" hay "for").', band5: 'Noise from traffic is very bad for our sleep.', band8: 'Constant traffic noise can have a negative impact on residents’ sleep quality.' },
       { id: 'v127', topic: 'General', register: 'Both (Academic & Spoken)', word: 'save time and money', ipa: '/seɪv taɪm ænd ˈmʌn.i/', band: 'Band 5.5', meaning: 'tiết kiệm thời gian và tiền bạc', wordFamily: 'cost-effective (adj) • time-saving (adj)', commonMistake: 'Cụm cực tự nhiên cho cả Speaking và Writing ở mức 5.5–6.0.', band5: 'Online shopping is faster and cheaper.', band8: 'Ordering groceries online helps busy working parents save both time and money.' },
       { id: 'v128', topic: 'General', register: 'Both (Academic & Spoken)', word: 'meet a deadline', ipa: '/miːt ə ˈded.laɪn/', band: 'Band 6.0', meaning: 'hoàn thành đúng hạn chót', wordFamily: 'miss a deadline (antonym)', commonMistake: 'Dùng "meet a deadline" (không dùng "catch a deadline" hay "finish a deadline").', band5: 'She worked hard to finish the report before Friday.', band8: 'Good time management helps university students meet tight assignment deadlines without panic.' },
@@ -3398,7 +3407,6 @@
       { id: 'v133', topic: 'Health', register: 'Both (Academic & Spoken)', word: 'stay in shape', ipa: '/steɪ ɪn ʃeɪp/', band: 'Band 6.0', meaning: 'giữ dáng, duy trì thể lực tốt', wordFamily: 'keep fit (synonym)', commonMistake: 'Rất tự nhiên cho Speaking Part 1/2 về thể thao và sức khỏe.', band5: 'Swimming twice a week keeps my body healthy.', band8: 'Cycling to work every morning helps me stay in shape without paying for a gym.' },
       { id: 'v134', topic: 'Health', register: 'Both (Academic & Spoken)', word: 'break a bad habit', ipa: '/breɪk ə bæd ˈhæb.ɪt/', band: 'Band 6.0', meaning: 'từ bỏ một thói quen xấu', wordFamily: 'form / build a habit (antonym)', commonMistake: 'Dùng "break a habit" (không dùng "stop/cut a habit").', band5: 'It is hard to stop checking phones in bed.', band8: 'Charging your phone in another room makes it easier to break the bad habit of late-night scrolling.' },
       { id: 'v135', topic: 'Environment', register: 'Both (Academic & Spoken)', word: 'protect wildlife habitats', ipa: '/prəˈtekt ˈwaɪld.laɪf ˈhæb.ɪ.tæts/', band: 'Band 6.0', meaning: 'bảo vệ môi trường sống của động vật hoang dã', wordFamily: 'conservation (n) • endangered species (n)', commonMistake: '"Wildlife" là danh từ không đếm được — không thêm "s".', band5: 'National parks keep wild animals’ homes safe.', band8: 'Expanding national parks is essential to protect wildlife habitats from urban expansion.' },
-      { id: 'v136', topic: 'Technology', register: 'Both (Academic & Spoken)', word: 'keep in touch with', ipa: '/kiːp ɪn tʌtʃ wɪð/', band: 'Band 5.5', meaning: 'giữ liên lạc với ai đó', wordFamily: 'stay in touch (synonym)', commonMistake: 'Rất hay dùng cho cả Speaking và Writing khi nói về lợi ích của smartphone.', band5: 'Video calls help me talk to my family abroad.', band8: 'Messaging apps make it effortless to keep in touch with relatives living overseas.' },
       { id: 'v137', topic: 'Urbanization', register: 'Both (Academic & Spoken)', word: 'improve quality of life', ipa: '/ɪmˈpruːv ˈkwɒl.ə.ti əv laɪf/', band: 'Band 6.0', meaning: 'cải thiện chất lượng cuộc sống', wordFamily: 'standard of living (n)', commonMistake: 'Không viết "improve life quality" khi muốn diễn đạt tự nhiên — dùng "quality of life".', band5: 'Better parks and clean air make city life nicer.', band8: 'Building clean parks and reliable transit directly improves urban residents’ quality of life.' },
       { id: 'v138', topic: 'Economy', register: 'Both (Academic & Spoken)', word: 'boost the local economy', ipa: '/buːst ðə ˈləʊ.kəl ɪˈkɒn.ə.mi/', band: 'Band 6.0', meaning: 'thúc đẩy nền kinh tế địa phương', wordFamily: 'stimulate growth (Band 7.5+)', commonMistake: 'Dùng "boost / stimulate the economy" (không dùng "grow up the economy").', band5: 'Tourists spending money helps small towns get richer.', band8: 'Hosting seasonal cultural festivals can boost the local economy and create part-time jobs.' },
       { id: 'v139', topic: 'Media', register: 'Both (Academic & Spoken)', word: 'spread false information', ipa: '/spred fɔːls ˌɪn.fəˈmeɪ.ʃən/', band: 'Band 6.0', meaning: 'lan truyền thông tin sai sự thật', wordFamily: 'disinformation (n) • misleading (adj)', commonMistake: '"Information" tuyệt đối không thêm "s" và không dùng "an".', band5: 'Some websites share wrong facts very quickly.', band8: 'Unverified social media accounts can spread false information during public emergencies.' },
@@ -3530,16 +3538,16 @@
       { id: 'vf23', sentence: 'Working from home twice a week significantly cuts weekly _______ _______.', meaning: 'thời gian di chuyển đi làm (2 từ)', answer: 'commuting time', explain: 'Cụm rất tự nhiên cho chủ đề Work & Urbanization.' },
       { id: 'vf24', sentence: 'During recessions, workers often value _______ _______ more than bonuses.', meaning: 'sự ổn định công việc (2 từ)', answer: 'job security', explain: 'Collocation chuẩn Band 6.0–6.5.' },
       { id: 'vf25', sentence: 'High inflation slows down overall _______ _______ across households.', meaning: 'chi tiêu tiêu dùng (2 từ)', answer: 'consumer spending', explain: 'Cụm kinh tế chuẩn Band 6.5–7.0.' },
-      { id: 'vf26', sentence: 'Career advisors help teenagers _______ a _______ about their major.', meaning: 'đưa ra quyết định (3 từ: make a decision)', answer: 'make a decision', explain: 'Tuyệt đối không dùng "do a decision" — luôn dùng "make a decision".' },
-      { id: 'vf27', sentence: 'Good time management helps students _______ a _______ without panic.', meaning: 'hoàn thành đúng hạn chót (3 từ: meet a deadline)', answer: 'meet a deadline', explain: 'Collocation chuẩn: "meet a deadline" (không dùng catch/finish).' },
-      { id: 'vf28', sentence: 'Rising sea levels _______ a serious _______ to coastal communities.', meaning: 'đặt ra mối đe dọa nghiêm trọng (4 từ: pose a serious threat)', answer: 'pose a serious threat', explain: 'Cụm kinh điển Writing Task 2: "pose a serious threat to...".' },
+      { id: 'vf26', sentence: 'Career advisors help teenagers _______ _______ _______ about their major.', meaning: 'đưa ra quyết định (3 từ)', answer: 'make a decision', explain: 'Tuyệt đối không dùng "do a decision" — luôn dùng "make a decision".' },
+      { id: 'vf27', sentence: 'Good time management helps students _______ _______ _______ without panic.', meaning: 'hoàn thành đúng hạn chót (3 từ)', answer: 'meet a deadline', explain: 'Collocation chuẩn: "meet a deadline" (không dùng catch/finish).' },
+      { id: 'vf28', sentence: 'Rising sea levels _______ _______ _______ _______ to coastal communities.', meaning: 'đặt ra mối đe dọa nghiêm trọng (4 từ)', answer: 'pose a serious threat', explain: 'Cụm kinh điển Writing Task 2: "pose a serious threat to...".' },
       { id: 'vf29', sentence: 'Authorities must _______ _______ _______ on factory waste disposal.', meaning: 'áp đặt các quy định nghiêm ngặt (3 từ)', answer: 'impose strict regulations', explain: 'Động từ chuẩn đi với regulations/taxes/fines là "impose".' },
       { id: 'vf30', sentence: 'Print book sales _______ _______ _______ at around $13.5 billion.', meaning: 'duy trì tương đối ổn định (3 từ)', answer: 'remained relatively stable', explain: 'Sau "remain" luôn dùng tính từ "stable", không dùng trạng từ.' },
-      { id: 'vf31', sentence: 'International arrivals _______ a _______ of 5.2 million in July.', meaning: 'đạt mức đỉnh là (4 từ: reached a peak of)', answer: 'reached a peak of', explain: 'Cụm Task 1 chuẩn: "reach a peak of [number]".' },
+      { id: 'vf31', sentence: 'International arrivals _______ _______ _______ _______ 5.2 million in July.', meaning: 'đạt mức đỉnh là (4 từ)', answer: 'reached a peak of', explain: 'Cụm Task 1 chuẩn: "reach a peak of [number]".' },
       { id: 'vf32', sentence: 'The old factory was demolished to _______ _______ _______ a tech hub.', meaning: 'nhường chỗ cho (3 từ)', answer: 'make way for', explain: 'Cụm tủ cho Writing Task 1 Map Comparison.' },
-      { id: 'vf33', sentence: 'With streaming apps, I only visit cinemas _______ in a _______ _______.', meaning: 'hiếm khi / năm thì mười họa (5 từ: once in a blue moon)', answer: 'once in a blue moon', explain: 'Thành ngữ tự nhiên Band 7.0+ cho Speaking Part 1.' },
-      { id: 'vf34', sentence: 'Spending Sunday in nature really helps me _______ my _______.', meaning: 'nạp lại năng lượng (3 từ: recharge my batteries)', answer: 'recharge my batteries', explain: 'Luôn dùng "batteries" ở dạng số nhiều.' },
-      { id: 'vf35', sentence: 'Whenever I read a gripping novel, I completely _______ _______ of _______.', meaning: 'quên cả thời gian (4 từ: lose track of time)', answer: 'lose track of time', explain: 'Diễn đạt cực mượt cho Speaking Part 1 & Part 2.' }
+      { id: 'vf33', sentence: 'With streaming apps, I only visit cinemas _______ _______ _______ _______ _______.', meaning: 'hiếm khi / năm thì mười họa (5 từ)', answer: 'once in a blue moon', explain: 'Thành ngữ tự nhiên Band 7.0+ cho Speaking Part 1.' },
+      { id: 'vf34', sentence: 'Spending Sunday in nature really helps me _______ _______ _______.', meaning: 'nạp lại năng lượng (3 từ)', answer: 'recharge my batteries', explain: 'Luôn dùng "batteries" ở dạng số nhiều.' },
+      { id: 'vf35', sentence: 'Whenever I read a gripping novel, I completely _______ _______ _______ _______.', meaning: 'quên cả thời gian (4 từ)', answer: 'lose track of time', explain: 'Diễn đạt cực mượt cho Speaking Part 1 & Part 2.' }
     ];
 
     const VOCAB_DRILLS = [
@@ -3854,7 +3862,6 @@ const VOCAB_V52_STAGE0 = [
 ];
 
 const VOCAB_V52_SPEAKING_AND_BAND85 = [
-  { id: 'v8-01', topic: 'Speaking', register: 'Speaking (Natural)', word: 'a double-edged sword', ipa: '/ə ˌdʌb.əl.edʒd ˈsɔːd/', band: 'Band 7.5', meaning: 'con dao hai lưỡi (vừa lợi vừa hại)', wordFamily: 'trade-off (n)', commonMistake: 'Chỉ dùng 1 lần/bài Speaking Part 3, tránh lạm dụng như khuôn mẫu.', band5: 'Social media has both good and bad sides.', band8: 'Honestly, artificial intelligence in classrooms is a double-edged sword: it speeds up research, yet it can weaken independent thinking.' },
   { id: 'v8-02', topic: 'Speaking', register: 'Speaking (Natural)', word: 'unwind after a long day', ipa: '/ʌnˈwaɪnd ˈɑːf.tər ə lɒŋ deɪ/', band: 'Band 7.5', meaning: 'thư giãn, xả hơi sau ngày dài', wordFamily: 'recharge (v) • decompress (v)', commonMistake: 'Rất tự nhiên cho Speaking Part 1–2; tránh dùng trong Writing Task 1.', band5: 'I listen to music to relax in the evening.', band8: 'Going for a brisk evening walk is my favourite way to unwind after a long day at the office.' },
   { id: 'v8-03', topic: 'Speaking', register: 'Speaking (Natural)', word: 'strike a healthy balance', ipa: '/straɪk ə ˈhel.θi ˈbæl.əns/', band: 'Band 7.5', meaning: 'tìm được sự cân bằng lành mạnh', wordFamily: 'equilibrium (n)', commonMistake: 'Luôn đi với động từ "strike" (hoặc "maintain"), không dùng "make a balance".', band5: 'Workers should have good work and life time.', band8: 'Flexible hours allow young parents to strike a healthy balance between career growth and family life.' },
   { id: 'v8-04', topic: 'Speaking', register: 'Speaking (Natural)', word: 'boil down to', ipa: '/bɔɪl daʊn tuː/', band: 'Band 8.0', meaning: 'suy cho cùng là do, cốt lõi nằm ở', wordFamily: 'stem from (v) • hinge on (v)', commonMistake: 'Cực tự nhiên khi tổng kết ý trong Speaking Part 3.', band5: 'The main reason is usually money.', band8: 'At the end of the day, whether commuters switch to buses boils down to reliability and ticket affordability.' },
@@ -4263,7 +4270,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                         ],
                         "answer": "TRUE",
                         "evidenceId": "r6-p1",
-                        "explain": "Đoạn 1 nêu rõ \"more than eighty percent... collapse before the end of February\" (trước tháng 3) → TRUE."
+                        "evidenceQuote": "more than eighty percent of these dramatic pledges collapse before the end of February", "explain": "Đoạn 1 nêu rõ \"more than eighty percent... collapse before the end of February\" (trước tháng 3) → TRUE."
                   },
                   {
                         "id": "r6-q2",
@@ -4951,7 +4958,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                         ],
                         "answer": "B. It complements open-field farming by supplying perishable urban greens.",
                         "evidenceId": "r5-p6",
-                        "explain": "Đoạn 6 nêu rõ: \"not as a replacement... but as a strategic complement\" cho rau củ dễ hỏng ở đô thị."
+                        "evidenceQuote": "not as a replacement for open-field agriculture, but as a strategic complement", "explain": "Đoạn 6 nêu rõ: \"not as a replacement... but as a strategic complement\" cho rau củ dễ hỏng ở đô thị."
                   },
                   {
                         "id": "r5-q6",
@@ -6337,7 +6344,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                               "astrolabe"
                         ],
                         "evidenceId": "r18-p3",
-                        "explain": "Đoạn 3 ghi nguyên văn: 'adapted the astronomical astrolabe... into a weighted brass mariner’s astrolabe'."
+                        "evidenceQuote": "adapted the astronomical astrolabe—originally perfected by Islamic scholars for terrestrial timekeeping—into a weighted brass mariner’s astrolabe", "explain": "Đoạn 3 ghi nguyên văn: 'adapted the astronomical astrolabe... into a weighted brass mariner’s astrolabe'."
                   },
                   {
                         "id": "r18-q12",
@@ -6566,7 +6573,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                               "keystone"
                         ],
                         "evidenceId": "r19-p2",
-                        "explain": "Đoạn 2 ghi nguyên văn: 'reintroducing missing keystone species that physically engineer habitats'."
+                        "evidenceQuote": "reintroducing missing 'keystone' species that physically engineer habitats", "explain": "Đoạn 2 ghi nguyên văn: 'reintroducing missing keystone species that physically engineer habitats'."
                   },
                   {
                         "id": "r19-q13",
@@ -6778,7 +6785,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                               "offloading"
                         ],
                         "evidenceId": "r20-p1",
-                        "explain": "Đoạn 1 ghi nguyên văn: 'term this habit cognitive offloading'."
+                        "evidenceQuote": "term this habit 'cognitive offloading'", "explain": "Đoạn 1 ghi nguyên văn: 'term this habit cognitive offloading'."
                   },
                   {
                         "id": "r20-q12",
@@ -7592,7 +7599,7 @@ const READING_V48_INTERMEDIATE_AND_ADVANCED = [
         options: ['YES', 'NO', 'NOT GIVEN'],
         answer: 'NO',
         evidenceId: 'r23-p6',
-        evidenceQuote: 'Preserving scientific progress ... demands designing friction back into workflows: rewarding researchers who document disconfirming evidence',
+        evidenceQuote: 'Preserving scientific progress in an era of ubiquitous synthesis therefore demands designing friction back into workflows',
         paraphraseMap: [{ q: 'simple disclosure ... is sufficient', p: 'demands designing friction back into workflows (không đủ chỉ công bố)' }],
         distractorNote: 'Bẫy gán quan điểm nhân vật cho tác giả: Takahashi ủng hộ disclosure, nhưng đoạn 4–6 tác giả nhấn mạnh cần thiết kế "friction" và đối chiếu bằng chứng bác bỏ → NO.',
         explain: 'Tác giả bác bỏ việc chỉ công bố là đủ, mà kết luận cần thiết kế lại quy trình tạo độ ma sát phản biện và giữ chuẩn kiểm định độc lập → NO.'
@@ -7641,7 +7648,7 @@ const READING_V48_INTERMEDIATE_AND_ADVANCED = [
         options: ['A. Dr. Hannah Alverez', 'B. Prof. Kenji Takahashi', 'C. Prof. Mireille Laurent', 'D. Zurich Institute researchers'],
         answer: 'A. Dr. Hannah Alverez',
         evidenceId: 'r23-p2',
-        evidenceQuote: 'Alverez ... observed a marked narrowing in the vocabulary of uncertainty ... smooth away awkward outliers in favor of fluent, high-confidence summaries',
+        evidenceQuote: 'observed a marked narrowing in the vocabulary of uncertainty',
         paraphraseMap: [{ q: 'erase unresolved anomalies', p: 'smooth away awkward outliers' }],
         explain: 'Đoạn 2: Dr. Hannah Alverez thực hiện kiểm toán 4.200 bản thảo y sinh năm 2025 → A.'
       },
@@ -14426,12 +14433,7 @@ const GRAMMAR_PROOFREADING_LAB = [
     function renderReadingSelect() {
       const pool = getFilteredReadingPassages();
       const sel = document.getElementById('readingPassageSelect');
-      const allBtn = document.getElementById('rFilterAllBtn');
-      const fullBtn = document.getElementById('rFilterFullBtn');
-      const starterBtn = document.getElementById('rFilterStarterBtn');
-      if (allBtn) allBtn.textContent = `Tất cả (${READING_PASSAGES.length})`;
-      if (fullBtn) fullBtn.textContent = `Full-Length 20' (${READING_PASSAGES.filter(p => p.minutes >= 20 || p.title.includes('[Full-Length')).length})`;
-      if (starterBtn) starterBtn.textContent = `Mất gốc <5.0 (${READING_PASSAGES.filter(p => p.bandTier === 'starter' || /\[<5\.0/.test(p.title)).length})`;
+      // Reading filter controls are managed by dropdowns (rFilterBandSelect & rFilterTypeSelect)
       const scores = (appState && appState.readingScores) || {};
       sel.innerHTML = pool.map(p => {
         const sc = scores[p.id];
@@ -18253,7 +18255,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         listeningIds: ['l-full-s1', 'l-full-s2', 'l-full-s3', 'l-full-s4'], // 10 + 10 + 10 + 10 = 40 real IELTS questions!
         listeningMinutes: 30,
         writingT1Id: 'wt1-1',
-        writingT2Id: 'wt2-2',
+        writingT2Id: 'w2',
         writingMinutes: 60
       },
       mock2: {
@@ -18264,7 +18266,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         listeningIds: ['l-full2-s1', 'l-full2-s2', 'l-full2-s3', 'l-full2-s4'], // 10 + 10 + 10 + 10 = 40 real IELTS questions!
         listeningMinutes: 30,
         writingT1Id: 'wt1-11',
-        writingT2Id: 'wt2-6',
+        writingT2Id: 'w6',
         writingMinutes: 60
       },
       mock3: {
@@ -18274,8 +18276,8 @@ const GRAMMAR_PROOFREADING_LAB = [
         readingMinutes: 60,
         listeningIds: ['l-full3-s1', 'l-full3-s2', 'l-full3-s3', 'l-full3-s4'],
         listeningMinutes: 30,
-        writingT1Id: 'wt1-1',
-        writingT2Id: 'wt2-2',
+        writingT1Id: 'wt1-12',
+        writingT2Id: 'w12',
         writingMinutes: 60
       }
     };
@@ -18383,20 +18385,42 @@ const GRAMMAR_PROOFREADING_LAB = [
               <span>${escapeHtml(opt)}</span>
             </label>
           `).join('')}</div>`;
+        } else if (q.inputType === 'checkbox') {
+          const arrSaved = Array.isArray(saved) ? saved : [];
+          field = `<div class="space-y-1.5">${(q.options || []).map(opt => `
+            <label class="cursor-pointer flex items-start gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-brand-400">
+              <input type="checkbox" name="mr-${q.id}" value="${escapeHtml(opt)}" ${arrSaved.includes(opt) ? 'checked' : ''} ${mockReadSubmitted ? 'disabled' : ''} class="mt-0.5 accent-brand-600" />
+              <span>${escapeHtml(opt)}</span>
+            </label>
+          `).join('')}</div>`;
+        } else if (q.inputType === 'wordbank') {
+          const wb = q.wordBank || q.options || [];
+          field = `
+            <div class="rounded-lg border border-indigo-200 bg-indigo-50/60 p-2 flex flex-wrap gap-1.5">
+              <span class="w-full text-[10px] font-extrabold uppercase tracking-wider text-indigo-800">Word Bank (Chọn 1 từ bên dưới):</span>
+              ${wb.map(opt => `<button type="button" data-mrwb-q="${q.id}" data-mrwb-val="${escapeHtml(opt)}" ${mockReadSubmitted ? 'disabled' : ''} class="r-wb-pill px-2 py-0.5 rounded-md border border-indigo-200 bg-white hover:bg-indigo-100 text-xs font-bold text-indigo-900">${escapeHtml(opt)}</button>`).join('')}
+            </div>
+            <select id="mrsel-${q.id}" ${mockReadSubmitted ? 'disabled' : ''} class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-800">
+              <option value="">-- Chọn từ trong Word Bank --</option>
+              ${wb.map(opt => `<option value="${escapeHtml(opt)}" ${saved === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
+            </select>`;
         } else if (q.inputType === 'select') {
           field = `<select id="mrsel-${q.id}" ${mockReadSubmitted ? 'disabled' : ''} class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-800">
             <option value="">-- Chọn đáp án --</option>
-            ${q.options.map(opt => `<option value="${escapeHtml(opt)}" ${saved === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
+            ${(q.options || []).map(opt => `<option value="${escapeHtml(opt)}" ${saved === opt ? 'selected' : ''}>${escapeHtml(opt)}</option>`).join('')}
           </select>`;
         } else {
-          field = `<input id="mrtxt-${q.id}" type="text" value="${escapeHtml(saved)}" ${mockReadSubmitted ? 'disabled' : ''} placeholder="Nhập đáp án..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />`;
+          field = `<input id="mrtxt-${q.id}" type="text" value="${escapeHtml(typeof saved === 'string' ? saved : '')}" ${mockReadSubmitted ? 'disabled' : ''} placeholder="Nhập đáp án..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm" />`;
         }
         let fbHtml = '';
         if (mockReadSubmitted) {
-          const isRight = q.inputType === 'text'
-            ? (q.answers || []).map(a => normalizeIeltsAnswer(a)).includes(normalizeIeltsAnswer(saved))
-            : saved === q.answer;
-          fbHtml = `<div class="text-xs rounded-lg p-2 ${isRight ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}"><strong>${isRight ? '✓ Đúng!' : `✗ Đáp án: ${escapeHtml(q.answer)}`}</strong> — ${q.explain}</div>`;
+          const isRight = q.inputType === 'checkbox'
+            ? (Array.isArray(saved) && Array.isArray(q.answer) && saved.length === q.answer.length && saved.slice().sort().every((v, idx) => v === q.answer.slice().sort()[idx]))
+            : q.inputType === 'text'
+              ? (q.answers || [q.answer || '']).map(a => normalizeIeltsAnswer(a)).includes(normalizeIeltsAnswer(saved))
+              : saved === q.answer;
+          const ansDisplay = Array.isArray(q.answer) ? q.answer.join(' & ') : String(q.answer || '');
+          fbHtml = `<div class="text-xs rounded-lg p-2 ${isRight ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}"><strong>${isRight ? '✓ Đúng!' : `✗ Đáp án: ${escapeHtml(ansDisplay)}`}</strong> — ${q.explain}</div>`;
         }
         return `
           <div id="mrq-${q.id}" class="p-3 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2">
@@ -18425,6 +18449,16 @@ const GRAMMAR_PROOFREADING_LAB = [
         } else if (q.inputType === 'select' || q.inputType === 'wordbank') {
           const s = document.getElementById(`mrsel-${q.id}`);
           if (s) s.addEventListener('change', () => { mockReadAnswers[q.id] = s.value; updateMockReadPalette(allQs); });
+          if (q.inputType === 'wordbank') {
+            qPane.querySelectorAll(`[data-mrwb-q="${q.id}"]`).forEach(btn => {
+              btn.addEventListener('click', () => {
+                if (mockReadSubmitted || !s) return;
+                s.value = btn.dataset.mrwbVal;
+                mockReadAnswers[q.id] = s.value;
+                updateMockReadPalette(allQs);
+              });
+            });
+          }
         } else {
           const inp = document.getElementById(`mrtxt-${q.id}`);
           if (inp) inp.addEventListener('input', () => { mockReadAnswers[q.id] = inp.value; updateMockReadPalette(allQs); });
@@ -18441,7 +18475,7 @@ const GRAMMAR_PROOFREADING_LAB = [
       const nav = document.getElementById('mockReadingNavPalette');
       if (!nav) return;
       nav.innerHTML = allQs.map((q, i) => {
-        const answered = Boolean((mockReadAnswers[q.id] || '').trim());
+        const answered = Array.isArray(mockReadAnswers[q.id]) ? mockReadAnswers[q.id].length > 0 : Boolean(String(mockReadAnswers[q.id] || '').trim());
         return `<button type="button" data-mrjump="${q.passageIdx}:${q.id}" class="ielts-q-pill ${answered ? 'answered' : ''}">${i + 1}</button>`;
       }).join('');
       nav.querySelectorAll('[data-mrjump]').forEach(btn => {
@@ -18731,6 +18765,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         <span class="text-[11px] font-extrabold uppercase text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full">${escapeHtml(item.type)}</span>
         <p class="text-sm sm:text-base font-bold text-slate-900 leading-relaxed">${escapeHtml(item.prompt)}</p>
         ${item.task === 1 && item.chartData ? `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5"><p class="text-xs font-bold text-slate-700">${escapeHtml(item.chartTitle)}</p><div class="relative h-56 w-full"><canvas id="mockTask1Canvas"></canvas></div></div>` : ''}
+        ${item.task === 1 && item.tableHeaders && item.tableRows ? `<div class="overflow-x-auto bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5"><table class="w-full text-xs text-left border-collapse"><thead><tr class="bg-slate-100 text-slate-800">${item.tableHeaders.map(h => `<th class="p-2 border border-slate-200 font-bold">${h}</th>`).join('')}</tr></thead><tbody>${item.tableRows.map(r => `<tr class="bg-white">${r.map((cell, ci) => `<td class="p-2 border border-slate-200 ${ci === 0 ? 'font-bold text-slate-900' : 'text-slate-700'}">${cell}</td>`).join('')}</tr>`).join('')}</tbody></table>${item.tableNote ? `<p class="text-[11px] text-slate-500 italic">${escapeHtml(item.tableNote)}</p>` : ''}</div>` : ''}
       `;
       if (item.task === 1 && item.chartData && typeof Chart !== 'undefined') {
         const ctx = document.getElementById('mockTask1Canvas');
@@ -18739,7 +18774,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         const isDollar = /\$\s*Billion/i.test(item.chartTitle || '');
         const isPct = /%/.test(item.chartTitle || '');
         mockChartInstance = new Chart(ctx, {
-          type: item.visualType,
+          type: item.visualType === 'mixed' ? 'line' : item.visualType,
           data: item.chartData,
           options: {
             responsive: true,
@@ -19319,7 +19354,7 @@ const GRAMMAR_PROOFREADING_LAB = [
           type, // 'admin_ok' | 'admin_fail' | 'learner'
           event: eventLabel,
           status: statusLabel,
-          snapshot: `${appState.xp} XP • ${mastered}/260 từ • ${drills} bài`
+          snapshot: `${appState.xp} XP • ${mastered}/${VOCAB_DATA.length} từ • ${drills} bài`
         });
         if (appState.accessLogs.length > 200) appState.accessLogs.pop();
         saveState();
@@ -22348,6 +22383,60 @@ const GRAMMAR_PROOFREADING_LAB = [
               }
             }
           }
+          // Fallback for Guided Mode where text is split across .guided-gloss-word / .guided-chunk-sep spans
+          if (!matched) {
+            const textNodes = [];
+            const w3 = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+            let tn;
+            while ((tn = w3.nextNode())) {
+              if (tn.parentElement && tn.parentElement.classList.contains('guided-chunk-sep')) continue;
+              textNodes.push(tn);
+            }
+            const charMap = [];
+            let flat = '';
+            textNodes.forEach(n => {
+              const v = n.nodeValue || '';
+              for (let ci = 0; ci < v.length; ci++) {
+                const ch = v[ci];
+                if (/\s/.test(ch)) {
+                  if (flat.length && flat[flat.length - 1] !== ' ') { flat += ' '; charMap.push({ node: n, offset: ci }); }
+                } else {
+                  flat += ch.toLowerCase();
+                  charMap.push({ node: n, offset: ci });
+                }
+              }
+            });
+            for (const needle of tryNeedles) {
+              const normN = needle.replace(/\s+/g, ' ').trim().toLowerCase();
+              const pos = flat.indexOf(normN);
+              if (pos !== -1 && pos + normN.length <= charMap.length) {
+                const sliceMap = charMap.slice(pos, pos + normN.length);
+                const byNode = new Map();
+                sliceMap.forEach(entry => {
+                  const cur = byNode.get(entry.node);
+                  if (!cur) byNode.set(entry.node, { start: entry.offset, end: entry.offset + 1 });
+                  else { cur.start = Math.min(cur.start, entry.offset); cur.end = Math.max(cur.end, entry.offset + 1); }
+                });
+                let firstSpan = null;
+                byNode.forEach((bounds, n) => {
+                  try {
+                    const r = document.createRange();
+                    r.setStart(n, bounds.start);
+                    r.setEnd(n, Math.min((n.nodeValue || '').length, bounds.end));
+                    const sp = document.createElement('span');
+                    sp.className = 'evidence-sentence-hit';
+                    r.surroundContents(sp);
+                    if (!firstSpan) firstSpan = sp;
+                  } catch (_) {}
+                });
+                if (firstSpan) {
+                  firstSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  matched = true;
+                  break;
+                }
+              }
+            }
+          }
           if (!matched) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -23276,9 +23365,18 @@ const GRAMMAR_PROOFREADING_LAB = [
             const uid = 'r-ai-' + Date.now();
             parsed.id = uid;
             parsed.bandTier = parseFloat(band) <= 5.0 ? 'starter' : 'advanced';
-            parsed.paragraphs.forEach((pa, idx) => { pa.id = `${uid}-p${idx + 1}`; });
+            const paraIdMap = {};
+            parsed.paragraphs.forEach((pa, idx) => {
+              const oldId = pa.id;
+              const newId = `${uid}-p${idx + 1}`;
+              if (oldId) paraIdMap[oldId] = newId;
+              pa.id = newId;
+            });
             parsed.questions.forEach((q, idx) => {
               q.id = `${uid}-q${idx + 1}`;
+              if (q.evidenceId && paraIdMap[q.evidenceId]) {
+                q.evidenceId = paraIdMap[q.evidenceId];
+              }
               if (!q.evidenceId || !parsed.paragraphs.some(pa => pa.id === q.evidenceId)) {
                 q.evidenceId = parsed.paragraphs[idx % parsed.paragraphs.length].id;
               }
