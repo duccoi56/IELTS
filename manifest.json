@@ -1,7 +1,7 @@
 {
   "name": "IELTS Mastery Studio — Hệ thống Luyện thi IELTS Toàn diện",
   "short_name": "IELTS Mastery",
-  "description": "Ứng dụng tự học IELTS All-in-One từ Band 5.0 lên 8.5+ (260 Collocations, 20 chuyên đề Ngữ pháp / 200 bài tập, 21 Reading, 23 Listening (2 Bộ Đề Thi thử Full 40R + 40L thật) + 2 Đề Thi thử Full-Length, 25 Writing, 12 Speaking).",
+  "description": "Ứng dụng tự học IELTS All-in-One từ Band 5.0 lên 8.5+ (260 Collocations, 20 chuyên đề Ngữ pháp / 200 bài tập, 22 Reading, 23 Listening (2 Bộ Đề Thi thử Full 40R + 40L thật) + 2 Đề Thi thử Full-Length, 25 Writing, 12 Speaking).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
