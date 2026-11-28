@@ -55,13 +55,20 @@ self.addEventListener('fetch', (event) => {
         return resp;
       }).catch(() => cached);
 
-      // For HTML navigation, prefer network first so updates arrive quickly, fallback to cache or ./index.html offline
+      // For HTML navigation, prefer network first so updates arrive quickly, fallback to cache or ./index.html on offline or HTTP error
       if (event.request.mode === 'navigate') {
-        return networkFetch.then((resp) => resp || cached || caches.match('./index.html'));
+        return networkFetch.then((resp) => {
+          if (resp && resp.ok) return resp;
+          return cached || caches.match('./index.html').then((fallback) => fallback || resp);
+        });
       }
 
       // Stale-while-revalidate for static assets and whitelisted CDN libraries
-      return cached || networkFetch;
+      if (cached) {
+        event.waitUntil(networkFetch);
+        return cached;
+      }
+      return networkFetch;
     })
   );
 });
