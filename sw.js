@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ielts-mastery-v55';
+const CACHE_NAME = 'ielts-mastery-v63';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -15,7 +15,8 @@ const CACHEABLE_CDN_HOSTS = [
   'cdn.jsdelivr.net',
   'unpkg.com',
   'fonts.googleapis.com',
-  'fonts.gstatic.com'
+  'fonts.gstatic.com',
+  'www.gstatic.com'
 ];
 
 self.addEventListener('install', (event) => {
