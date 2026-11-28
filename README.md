@@ -16,7 +16,7 @@ Gói mã nguồn hoàn chỉnh để triển khai trực tiếp lên **GitHub Pa
 ## Cấu trúc thư mục
 - `index.html`: Toàn bộ ứng dụng IELTS Mastery Studio.
 - `manifest.json`: Tệp cấu hình PWA chuẩn cho iOS, Android và máy tính.
-- `sw.js`: Service Worker (`v55`) hỗ trợ lưu bộ đệm ngoại tuyến cả mã nguồn lẫn thư viện giao diện/biểu đồ.
+- `sw.js`: Service Worker (`v63.5`) hỗ trợ lưu bộ đệm ngoại tuyến cả mã nguồn lẫn thư viện giao diện/biểu đồ.
 - `icons/`: Bộ biểu tượng ứng dụng chuẩn (`apple-touch-icon.png` 180x180 cho iOS, `icon-192.png`, `icon-512.png`, `icon.svg`).
 - `.nojekyll`: Đảm bảo GitHub Pages phục vụ tệp tĩnh trực tiếp không qua Jekyll.
 

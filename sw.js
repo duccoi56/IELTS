@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ielts-mastery-v63';
+const CACHE_NAME = 'ielts-mastery-v63.5';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -55,9 +55,9 @@ self.addEventListener('fetch', (event) => {
         return resp;
       }).catch(() => cached);
 
-      // For HTML navigation, prefer network first so updates arrive quickly, fallback to cache offline
+      // For HTML navigation, prefer network first so updates arrive quickly, fallback to cache or ./index.html offline
       if (event.request.mode === 'navigate') {
-        return networkFetch.then((resp) => resp || cached);
+        return networkFetch.then((resp) => resp || cached || caches.match('./index.html'));
       }
 
       // Stale-while-revalidate for static assets and whitelisted CDN libraries

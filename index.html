@@ -708,7 +708,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="space-y-1.5 max-w-2xl">
             <div class="inline-flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-full text-xs font-semibold">
-              <i data-lucide="compass" class="w-3.5 h-3.5"></i> CD-IELTS Studio • 3 Đề Thi thử Full 40R+40L • Auto-AI &amp; SM-2 SRS
+              <i data-lucide="compass" class="w-3.5 h-3.5"></i> CD-IELTS Studio • 8 Đề Thi thử Full • Auto-AI &amp; SM-2 SRS
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Lộ trình Chinh phục IELTS của bạn</h1>
             <p class="text-indigo-100 text-sm sm:text-base">
@@ -4740,6 +4740,7 @@ const VOCAB_COLLOCATION_MATCHER = {
                         ],
                         "answer": "TRUE",
                         "evidenceId": "r11-p2",
+                        "evidenceQuote": "volunteers in Amsterdam launched the first \"Repair Café\" in 2009",
                         "explain": "Đoạn 2 nêu rõ \"volunteers in Amsterdam launched the first Repair Café in 2009\" → TRUE."
                   },
                   {
@@ -8594,7 +8595,7 @@ const READING_MICRO_DRILLS = {
             wordBank: ['A. delamination', 'B. buckling', 'C. char', 'D. swelling', 'E. routers', 'F. monoculture'],
             text: '4. [Word Bank] Older adhesives could fail under sustained heat, causing charred outer layers to drop away in a hazard called ________.',
             options: ['A. delamination', 'B. buckling', 'C. char', 'D. swelling', 'E. routers', 'F. monoculture'],
-            answer: 'A. delamination', evidenceId: 'rm2-p3', evidenceQuote: 'causing charred outer plies to fall off in a hazardous process termed "delamination"',
+            answer: 'A. delamination', evidenceId: 'rm2-p3', evidenceQuote: 'causing charred outer plies to fall off in a hazardous process termed "delamination,"',
             paraphraseMap: [{ q: 'drop away', p: 'fall off' }],
             explain: 'Đoạn C gọi hiện tượng lớp than hóa bị bong rơi ra là "delamination" → A.'
           },
@@ -13181,18 +13182,20 @@ const GRAMMAR_PROOFREADING_LAB = [
 
     let _saveTimer = null;
     let _saveDirty = false;
-    function flushSaveState() {
+    function flushSaveState(opts = {}) {
       if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
       _saveDirty = false;
       try {
         localStorage.setItem('ielts_mastery_state_v2', JSON.stringify(appState));
       } catch (e) {}
-      if (typeof window.__markLocalDataModified === 'function') window.__markLocalDataModified();
-      if (typeof window.__scheduleCloudSync === 'function') window.__scheduleCloudSync();
+      if (!opts || !opts.silentSync) {
+        if (typeof window.__markLocalDataModified === 'function') window.__markLocalDataModified();
+        if (typeof window.__scheduleCloudSync === 'function') window.__scheduleCloudSync();
+      }
     }
 
-    function saveState() {
-      flushSaveState();
+    function saveState(opts = {}) {
+      flushSaveState(opts);
     }
 
     function saveStateDebounced(delayMs = 450) {
@@ -17872,7 +17875,7 @@ const GRAMMAR_PROOFREADING_LAB = [
       return [];
     }
 
-    async function resolveActiveModel(cfg, forceRefresh = false) {
+    async function resolveActiveModel(cfg, forceRefresh = false, persist = true) {
       if (cfg.model && cfg.model !== 'auto') return cfg.model.trim();
       if (!forceRefresh && cfg.resolvedModel) return cfg.resolvedModel;
       try {
@@ -17880,7 +17883,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         if (list.length) {
           cfg.resolvedModel = list[0];
           Object.keys(geminiKeySurfaceCache).forEach(k => delete geminiKeySurfaceCache[k]);
-        saveAiConfig(cfg);
+          if (persist) saveAiConfig(cfg);
           return list[0];
         }
       } catch (e) {}
@@ -17957,7 +17960,8 @@ const GRAMMAR_PROOFREADING_LAB = [
       const cfg = overrideCfg ? { ...overrideCfg } : getAiConfig();
       const key = (cfg.apiKey || '').trim();
       if (!key) throw new Error('NO_API_KEY');
-      let model = await resolveActiveModel(cfg, false);
+      const shouldPersistResolved = !overrideCfg;
+      let model = await resolveActiveModel(cfg, false, shouldPersistResolved);
 
       const executeCall = async (mName) => {
         let rawText = '';
@@ -17997,7 +18001,7 @@ const GRAMMAR_PROOFREADING_LAB = [
       } catch (err) {
         // If auto mode or preset model name returns 404/400, re-discover live models from the key once
         if (/HTTP 404|HTTP 400/.test(err.message)) {
-          const freshModel = await resolveActiveModel({ ...cfg, model: 'auto' }, true);
+          const freshModel = await resolveActiveModel({ ...cfg, model: 'auto' }, true, shouldPersistResolved);
           if (freshModel && freshModel !== model) return await executeCall(freshModel);
         }
         throw err;
@@ -18733,7 +18737,7 @@ const GRAMMAR_PROOFREADING_LAB = [
     let mockListenTimerId = null;
     let mockWritePart = 1; // 1 | 2
     let mockWriteDrafts = { 1: '', 2: '' };
-    let mockCurrentScores = { L: null, R: null, W: null, S: null, rawL: null, rawR: null, typeStatsR: {}, typeStatsL: {} };
+    let mockCurrentScores = { L: null, R: null, W: null, S: null, rawL: null, rawR: null, typeStatsR: {}, typeStatsL: {}, trfSaved: false };
 
     function stopMockListeningAudio() {
       mockListenStopFlag = true;
@@ -19176,7 +19180,9 @@ const GRAMMAR_PROOFREADING_LAB = [
           const f = e.target.files && e.target.files[0];
           if (!f) return;
           stopMockListeningAudio();
-          mockAudioEl.src = URL.createObjectURL(f);
+          if (mockCustomBlobUrl) { URL.revokeObjectURL(mockCustomBlobUrl); mockCustomBlobUrl = null; }
+          mockCustomBlobUrl = URL.createObjectURL(f);
+          mockAudioEl.src = mockCustomBlobUrl;
           mockAudioEl.classList.remove('hidden');
           showToast(`Đã nạp audio thật "${f.name}" cho Section ${mockListSecIdx + 1}!`, 'success');
         });
@@ -19259,6 +19265,11 @@ const GRAMMAR_PROOFREADING_LAB = [
       return Math.min(6.5, calcComponentBand(tr, cc, lr, gra));
     }
 
+    function formatVNTime(dateObj) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(dateObj.getDate())}/${pad(dateObj.getMonth() + 1)}/${dateObj.getFullYear()} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+    }
+
     function renderMockTRF() {
       const cfg = MOCK_TESTS[activeMockId];
       const pAvg = getPracticeAverages();
@@ -19307,13 +19318,15 @@ const GRAMMAR_PROOFREADING_LAB = [
           </div>
         ` : '<p class="text-xs text-slate-500 italic">Hoàn thành lần lượt Reading, Listening và Writing ở các tab phía trên để hệ thống tự động điền Phiếu Báo Điểm TRF và phân tích điểm yếu theo dạng câu hỏi.</p>'}
         <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" id="saveMockTrfBtn" ${!readyAll ? 'disabled' : ''} class="px-4 py-2 rounded-xl ${readyAll ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} text-xs sm:text-sm font-bold">Lưu Phiếu Điểm &amp; Đồng bộ Radar</button>
+          <button type="button" id="saveMockTrfBtn" ${(!readyAll || mockCurrentScores.trfSaved) ? 'disabled' : ''} class="px-4 py-2 rounded-xl ${readyAll && !mockCurrentScores.trfSaved ? 'bg-brand-600 hover:bg-brand-700 text-white' : 'bg-slate-200 text-slate-500 cursor-not-allowed'} text-xs sm:text-sm font-bold">${mockCurrentScores.trfSaved ? '✓ Đã lưu Phiếu Điểm &amp; Đồng bộ Radar' : 'Lưu Phiếu Điểm &amp; Đồng bộ Radar'}</button>
         </div>
       `;
 
       const saveBtn = document.getElementById('saveMockTrfBtn');
-      if (saveBtn && readyAll) {
+      if (saveBtn && readyAll && !mockCurrentScores.trfSaved) {
         saveBtn.addEventListener('click', () => {
+          if (mockCurrentScores.trfSaved) return;
+          mockCurrentScores.trfSaved = true;
           const rec = {
             date: formatVNTime(new Date()).slice(0, 16),
             testName: cfg.name,
@@ -19809,12 +19822,9 @@ const GRAMMAR_PROOFREADING_LAB = [
       const ADMIN_CRED_HASH = '998844645bbd60d4def81f433ed4313c65f7046476b1bffe6c55b8dc650a7f1d';
       let adminLoggedUserName = 'Admin';
 
-      function formatVNTime(dateObj) {
-        const pad = n => String(n).padStart(2, '0');
-        return `${pad(dateObj.getDate())}/${pad(dateObj.getMonth() + 1)}/${dateObj.getFullYear()} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
-      }
+      // formatVNTime is defined at top-level scope so renderMockTRF() and initApp() can both call it
 
-      function recordAccessLog(user, type, eventLabel, statusLabel) {
+      function recordAccessLog(user, type, eventLabel, statusLabel, opts = {}) {
         if (!Array.isArray(appState.accessLogs)) appState.accessLogs = [];
         const mastered = Object.values(appState.vocabMastery || {}).filter(v => v === 'mastered').length;
         const drills = Object.values(appState.completedItems || {}).filter(x => x && x.countAsDrill).length;
@@ -19827,11 +19837,11 @@ const GRAMMAR_PROOFREADING_LAB = [
           snapshot: `${appState.xp} XP • ${mastered}/${VOCAB_DATA.length} từ • ${drills} bài`
         });
         if (appState.accessLogs.length > 200) appState.accessLogs.pop();
-        saveState();
+        saveState(opts);
       }
 
-      // Log initial learner session on app open
-      recordAccessLog(appState.learnerName || 'Học viên khách', 'learner', 'Mở ứng dụng học IELTS', 'Đang học');
+      // Log initial learner session on app open without marking local progress dirty before cloud pull
+      recordAccessLog(appState.learnerName || 'Học viên khách', 'learner', 'Mở ứng dụng học IELTS', 'Đang học', { silentSync: true });
 
       function renderAdminDashboard() {
         const logs = appState.accessLogs || [];
@@ -19905,17 +19915,70 @@ const GRAMMAR_PROOFREADING_LAB = [
         if (e.target === adminModal) adminModal.classList.add('hidden');
       });
 
+      function sha256HexFallback(str) {
+        const bytes = new TextEncoder().encode(str);
+        const K = [
+          0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+          0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+          0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+          0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+          0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+          0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+          0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+          0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+        ];
+        const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+        const bitLen = bytes.length * 8;
+        const paddedLen = (((bytes.length + 9 + 63) >> 6) << 6);
+        const padded = new Uint8Array(paddedLen);
+        padded.set(bytes);
+        padded[bytes.length] = 0x80;
+        const dv = new DataView(padded.buffer);
+        dv.setUint32(paddedLen - 8, Math.floor(bitLen / 0x100000000), false);
+        dv.setUint32(paddedLen - 4, bitLen >>> 0, false);
+        const W = new Uint32Array(64);
+        const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+        for (let off = 0; off < paddedLen; off += 64) {
+          for (let i = 0; i < 16; i++) W[i] = dv.getUint32(off + i * 4, false);
+          for (let i = 16; i < 64; i++) {
+            const s0 = rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ (W[i - 15] >>> 3);
+            const s1 = rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ (W[i - 2] >>> 10);
+            W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+          }
+          let [a, b, c, d, e, f, g, h] = H;
+          for (let i = 0; i < 64; i++) {
+            const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+            const ch = (e & f) ^ (~e & g);
+            const t1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+            const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const t2 = (S0 + maj) >>> 0;
+            h = g; g = f; f = e; e = (d + t1) >>> 0;
+            d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+          }
+          H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0;
+          H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+          H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0;
+          H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+        }
+        return H.map(x => x.toString(16).padStart(8, '0')).join('');
+      }
+
       const handleAdminLogin = async () => {
         const u = (document.getElementById('adminUserInput').value || '').trim();
         const p = (document.getElementById('adminPassInput').value || '').trim();
         const errEl = document.getElementById('adminLoginError');
         let ok = false;
         try {
+          const payload = `${ADMIN_AUTH_SALT}:${u}:${p}`;
+          let hex = '';
           if (window.crypto && window.crypto.subtle) {
-            const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ADMIN_AUTH_SALT}:${u}:${p}`));
-            const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-            ok = (hex === ADMIN_CRED_HASH);
+            const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload));
+            hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          } else {
+            hex = sha256HexFallback(payload);
           }
+          ok = (hex === ADMIN_CRED_HASH);
         } catch (e) {}
         if (ok) {
           adminLoggedUserName = u;
@@ -19972,7 +20035,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         a.href = url;
         a.download = 'ielts_access_logs.csv';
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         showToast('Đã xuất nhật ký đăng nhập ra tệp CSV!', 'success');
       });
 
@@ -20335,7 +20398,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         a.href = url;
         a.download = 'ielts_mastery_progress.json';
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         showToast('Đã xuất tệp sao lưu tiến độ JSON.', 'success');
       });
       document.getElementById('importProgressInput').addEventListener('change', (e) => {
@@ -20348,9 +20411,15 @@ const GRAMMAR_PROOFREADING_LAB = [
             if (!parsed || typeof parsed !== 'object') throw new Error('Invalid');
             const cb = parsed.currentBands || {};
             const tb = parsed.targetBands || {};
+            const extraFields = {};
+            Object.keys(parsed).forEach(k => {
+              if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+              extraFields[k] = parsed[k];
+            });
             appState = {
               ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
-              activeTab: typeof parsed.activeTab === 'string' ? parsed.activeTab : 'dashboard',
+              ...extraFields,
+              activeTab: typeof parsed.activeTab === 'string' && VALID_TABS.has(parsed.activeTab) ? parsed.activeTab : 'dashboard',
               xp: Number.isFinite(Number(parsed.xp)) && Number(parsed.xp) >= 0 ? Math.floor(Number(parsed.xp)) : 0,
               currentBands: {
                 L: clampBand(cb.L, 6.0), R: clampBand(cb.R, 6.5), W: clampBand(cb.W, 5.5), S: clampBand(cb.S, 6.0)
@@ -20364,9 +20433,9 @@ const GRAMMAR_PROOFREADING_LAB = [
               streak: { count: 0, lastStudyDate: '', best: 0, ...(parsed.streak || {}) },
               draftAnswers: { reading: {}, listening: {}, grammar: {}, ...(parsed.draftAnswers || {}) },
               speakingNotes: parsed.speakingNotes && typeof parsed.speakingNotes === 'object' ? parsed.speakingNotes : {},
-          preferredAccent: ['en-GB', 'en-AU', 'en-US'].includes(parsed.preferredAccent) ? parsed.preferredAccent : 'en-GB',
-          diagnosticHistory: Array.isArray(parsed.diagnosticHistory) ? parsed.diagnosticHistory : [],
-          mockHistory: Array.isArray(parsed.mockHistory) ? parsed.mockHistory : [],
+              preferredAccent: ['en-GB', 'en-AU', 'en-US'].includes(parsed.preferredAccent) ? parsed.preferredAccent : 'en-GB',
+              diagnosticHistory: Array.isArray(parsed.diagnosticHistory) ? parsed.diagnosticHistory : [],
+              mockHistory: Array.isArray(parsed.mockHistory) ? parsed.mockHistory : [],
               completedItems: parsed.completedItems && typeof parsed.completedItems === 'object' ? parsed.completedItems : {},
               writingDrafts: parsed.writingDrafts && typeof parsed.writingDrafts === 'object' ? parsed.writingDrafts : {},
               practiceBands: parsed.practiceBands && typeof parsed.practiceBands === 'object' ? { L: parsed.practiceBands.L || [], R: parsed.practiceBands.R || [], W: parsed.practiceBands.W || [], S: parsed.practiceBands.S || [] } : { L: [], R: [], W: [], S: [] },
@@ -20376,6 +20445,7 @@ const GRAMMAR_PROOFREADING_LAB = [
               errorLog: Array.isArray(parsed.errorLog) ? parsed.errorLog : []
             };
             saveState();
+            if (typeof window.__flushCloudSyncNow === 'function') window.__flushCloudSyncNow();
             renderBandSliders();
             updateHeaderAndKPIs();
             updateRadarChart();
@@ -20745,10 +20815,11 @@ const GRAMMAR_PROOFREADING_LAB = [
           const content = `IELTS WRITING TASK ${item.task}\nType: ${item.type}\nPrompt: ${item.prompt}\n\n--- ESSAY ---\n${essay}${latest}\n`;
           const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
           const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
+          const dlUrl = URL.createObjectURL(blob);
+          a.href = dlUrl;
           a.download = `ielts-writing-${item.id}.txt`;
           a.click();
-          URL.revokeObjectURL(a.href);
+          setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
           showToast('Đã tải xuống bài viết (.txt)!', 'success');
         });
       }
@@ -21896,7 +21967,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         mockListSecIdx = 0; mockListAnswers = {}; mockListPlayed = {}; mockListSubmitted = false;
         mockWritePart = 1; mockWriteDrafts = { 1: '', 2: '' };
         stopMockListeningAudio();
-        mockCurrentScores = { L: null, R: null, W: null, S: null, rawL: null, rawR: null, typeStatsR: {}, typeStatsL: {} };
+        mockCurrentScores = { L: null, R: null, W: null, S: null, rawL: null, rawR: null, typeStatsR: {}, typeStatsL: {}, trfSaved: false };
         ['mockReadingResultBanner', 'mockListeningResultBanner', 'mockWritingResultBanner'].forEach(id => document.getElementById(id).classList.add('hidden'));
         switchMockSection('reading');
       });
@@ -21956,7 +22027,7 @@ const GRAMMAR_PROOFREADING_LAB = [
       document.getElementById('resetMockReadingBtn').addEventListener('click', () => {
         if (!window.confirm('Làm lại toàn bộ bài Reading Full Test hiện tại?')) return;
         mockReadAnswers = {}; mockReadSubmitted = false; mockReadPassageIdx = 0;
-        mockCurrentScores.R = null; mockCurrentScores.rawR = null; mockCurrentScores.typeStatsR = {};
+        mockCurrentScores.R = null; mockCurrentScores.rawR = null; mockCurrentScores.typeStatsR = {}; mockCurrentScores.trfSaved = false;
         document.getElementById('mockReadingResultBanner').classList.add('hidden');
         setMockTimerForSection('reading');
         renderMockReading();
@@ -21995,7 +22066,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         if (!window.confirm('Làm lại toàn bộ bài Listening Full Test hiện tại?')) return;
         stopMockListeningAudio();
         mockListAnswers = {}; mockListPlayed = {}; mockListSubmitted = false; mockListSecIdx = 0;
-        mockCurrentScores.L = null; mockCurrentScores.rawL = null; mockCurrentScores.typeStatsL = {};
+        mockCurrentScores.L = null; mockCurrentScores.rawL = null; mockCurrentScores.typeStatsL = {}; mockCurrentScores.trfSaved = false;
         document.getElementById('mockListeningResultBanner').classList.add('hidden');
         setMockTimerForSection('listening');
         renderMockListening();
@@ -22019,7 +22090,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         const b2 = quickScoreEssayBand(w2Text, 250, false);
         // Official IELTS Writing weighting: Task 2 = 2/3, Task 1 = 1/3, round down to nearest 0.5
         const weighted = Math.floor(((b1 + b2 * 2) / 3) * 2) / 2;
-        mockCurrentScores.W = weighted;
+        mockCurrentScores.W = weighted; mockCurrentScores.trfSaved = false;
         stopMockTimer();
         const banner = document.getElementById('mockWritingResultBanner');
         banner.innerHTML = `<p><strong>Kết quả Writing Full Test (Ước lượng Offline):</strong> Part 1 ≈ <strong>Band ${b1.toFixed(1)}</strong> (1/3) • Part 2 ≈ <strong>Band ${b2.toFixed(1)}</strong> (2/3) → <strong>Band Writing Tổng: ${weighted.toFixed(1)}</strong> (đã cập nhật vào Phiếu Điểm TRF).</p><p class="mt-1.5 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">⚠️ <strong>Cảnh báo chấm Offline:</strong> Bộ ước lượng nhanh chỉ đo độ dài, bố cục đoạn và mật độ từ vựng nên được <strong>gắn trần tối đa Band 6.5</strong> (không phát hiện được lạc đề hay lỗi ngữ pháp tinh vi). Hãy dán bài vào tab <strong>Writing → Chấm AI chuyên sâu</strong> để đánh giá chuẩn Band 7.0–9.0.</p>`;
@@ -22393,10 +22464,11 @@ const GRAMMAR_PROOFREADING_LAB = [
           };
           const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
           const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
+          const dlUrl = URL.createObjectURL(blob);
+          a.href = dlUrl;
           a.download = `ielts-mastery-backup-${new Date().toISOString().slice(0, 10)}.json`;
           a.click();
-          URL.revokeObjectURL(a.href);
+          setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
           showToast('Đã xuất tệp sao lưu tiến độ (.json)!', 'success');
         });
       }
@@ -22405,13 +22477,46 @@ const GRAMMAR_PROOFREADING_LAB = [
           const file = e.target.files && e.target.files[0];
           if (!file) return;
           const reader = new FileReader();
-          reader.onload = () => {
+          reader.onload = async () => {
             try {
               const parsed = JSON.parse(String(reader.result || '{}'));
-              const incoming = parsed.state || parsed;
-              if (!incoming || typeof incoming !== 'object') throw new Error('Tệp không hợp lệ');
-              Object.assign(appState, incoming);
+              const incoming = (parsed && parsed.state && typeof parsed.state === 'object' && !Array.isArray(parsed.state)) ? parsed.state : parsed;
+              if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) throw new Error('Tệp không hợp lệ');
+              const cb = incoming.currentBands || {};
+              const tb = incoming.targetBands || {};
+              const extraFields = {};
+              Object.keys(incoming).forEach(k => {
+                if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+                extraFields[k] = incoming[k];
+              });
+              appState = {
+                ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+                ...extraFields,
+                activeTab: typeof incoming.activeTab === 'string' && VALID_TABS.has(incoming.activeTab) ? incoming.activeTab : 'dashboard',
+                xp: Number.isFinite(Number(incoming.xp)) && Number(incoming.xp) >= 0 ? Math.floor(Number(incoming.xp)) : 0,
+                currentBands: { L: clampBand(cb.L, 6.0), R: clampBand(cb.R, 6.5), W: clampBand(cb.W, 5.5), S: clampBand(cb.S, 6.0) },
+                targetBands: { L: clampBand(tb.L, 7.5), R: clampBand(tb.R, 8.0), W: clampBand(tb.W, 7.0), S: clampBand(tb.S, 7.0) },
+                vocabMastery: incoming.vocabMastery && typeof incoming.vocabMastery === 'object' ? incoming.vocabMastery : {},
+                dailyXp: incoming.dailyXp && typeof incoming.dailyXp === 'object' ? { date: String(incoming.dailyXp.date || ''), xp: Number(incoming.dailyXp.xp) || 0 } : { date: '', xp: 0 },
+                vocabSrs: incoming.vocabSrs && typeof incoming.vocabSrs === 'object' ? incoming.vocabSrs : {},
+                streak: { count: 0, lastStudyDate: '', best: 0, ...(incoming.streak || {}) },
+                draftAnswers: { reading: {}, listening: {}, grammar: {}, ...(incoming.draftAnswers || {}) },
+                speakingNotes: incoming.speakingNotes && typeof incoming.speakingNotes === 'object' ? incoming.speakingNotes : {},
+                preferredAccent: ['en-GB', 'en-AU', 'en-US'].includes(incoming.preferredAccent) ? incoming.preferredAccent : 'en-GB',
+                diagnosticHistory: Array.isArray(incoming.diagnosticHistory) ? incoming.diagnosticHistory : [],
+                mockHistory: Array.isArray(incoming.mockHistory) ? incoming.mockHistory : [],
+                completedItems: incoming.completedItems && typeof incoming.completedItems === 'object' ? incoming.completedItems : {},
+                writingDrafts: incoming.writingDrafts && typeof incoming.writingDrafts === 'object' ? incoming.writingDrafts : {},
+                practiceBands: incoming.practiceBands && typeof incoming.practiceBands === 'object' ? { L: incoming.practiceBands.L || [], R: incoming.practiceBands.R || [], W: incoming.practiceBands.W || [], S: incoming.practiceBands.S || [] } : { L: [], R: [], W: [], S: [] },
+                roadmapChecks: incoming.roadmapChecks && typeof incoming.roadmapChecks === 'object' ? incoming.roadmapChecks : {},
+                learnerName: typeof incoming.learnerName === 'string' && incoming.learnerName.trim() ? incoming.learnerName.trim() : 'Học viên khách',
+                accessLogs: Array.isArray(incoming.accessLogs) ? incoming.accessLogs : [],
+                errorLog: Array.isArray(incoming.errorLog) ? incoming.errorLog : []
+              };
               saveState();
+              if (typeof window.__flushCloudSyncNow === 'function') {
+                await Promise.resolve(window.__flushCloudSyncNow()).catch(() => {});
+              }
               showToast('Khôi phục tiến độ thành công! Đang tải lại giao diện...', 'success');
               setTimeout(() => window.location.reload(), 650);
             } catch (err) {
@@ -22419,42 +22524,48 @@ const GRAMMAR_PROOFREADING_LAB = [
             }
           };
           reader.readAsText(file);
+          e.target.value = '';
         });
       }
 
-      // 4. Reading Highlight -> Save directly to Vocab SRS
+      // 4. Reading Highlight -> Save directly to Vocab SRS (unified with V52 My Deck SRS)
       const floatSaveSrsBtn = document.getElementById('floatSaveSrsBtn');
       if (floatSaveSrsBtn) {
         floatSaveSrsBtn.addEventListener('click', () => {
           const rawWord = (cachedSelectionText || window.getSelection()?.toString() || document.getElementById('iosSelectionPreview')?.textContent || '').trim();
-          const word = rawWord.replace(/^[.,!?;:"'()]+|[.,!?;:"'()]+$/g, '').slice(0, 60);
+          const word = rawWord.replace(/^[.,!?;:"'()]+|[.,!?;:"'()]+$/g, '').slice(0, 80);
           if (!word || word.length < 2) { showToast('Hãy bôi đen 1 từ hoặc cụm từ tiếng Anh trước.', 'warn'); return; }
-          if (!Array.isArray(appState.customVocab)) appState.customVocab = [];
-          if (VOCAB_DATA.some(v => v.word.toLowerCase() === word.toLowerCase())) {
-            showToast(`"${word}" đã có trong Kho Từ vựng SRS!`, 'info');
-            return;
+          if (typeof window.addCustomVocabToSrs === 'function') {
+            window.addCustomVocabToSrs(word, 'Từ/cụm từ bạn bôi vàng từ bài Reading — bấm Tra từ điển (Alt+D) để xem nghĩa chi tiết.', '');
+          } else {
+            if (!Array.isArray(appState.customVocab)) appState.customVocab = [];
+            if (VOCAB_DATA.some(v => v.word.toLowerCase() === word.toLowerCase())) {
+              showToast(`"${word}" đã có trong Kho Từ vựng SRS!`, 'info');
+              return;
+            }
+            const newEntry = {
+              id: 'cv-' + Date.now(),
+              topic: 'My Deck',
+              register: 'Both (Academic & Spoken)',
+              word,
+              ipa: '/tự lưu từ Reading/',
+              band: 'Band 6.5–8.0 (Tự lưu)',
+              meaning: 'Từ/cụm từ bạn bôi vàng từ bài Reading — bấm Tra từ điển (Alt+D) để xem nghĩa chi tiết.',
+              wordFamily: word,
+              commonMistake: 'Ghi nhớ ngữ cảnh xuất hiện trong bài đọc gốc.',
+              band5: 'I saw this word in Reading.',
+              band8: `Try using "${word}" naturally in your next Writing or Speaking practice.`
+            };
+            appState.customVocab.unshift(newEntry);
+            VOCAB_DATA.unshift(newEntry);
+            VOCAB_MAP.set(newEntry.id, newEntry);
+            if (!appState.vocabMastery) appState.vocabMastery = {};
+            appState.vocabMastery[newEntry.id] = 'learning';
+            saveState();
+            showToast(`Đã lưu "${word}" vào Kho Từ vựng SRS!`, 'success');
           }
-          const newEntry = {
-            id: 'cv-' + Date.now(),
-            topic: 'General',
-            register: 'Both (Academic & Spoken)',
-            word,
-            ipa: '/tự lưu từ Reading/',
-            band: 'Band 6.5–8.0 (Tự lưu)',
-            meaning: 'Từ/cụm từ bạn bôi vàng từ bài Reading — bấm Tra từ điển (Alt+D) để xem nghĩa chi tiết.',
-            wordFamily: word,
-            commonMistake: 'Ghi nhớ ngữ cảnh xuất hiện trong bài đọc gốc.',
-            band5: 'I saw this word in Reading.',
-            band8: `Try using "${word}" naturally in your next Writing or Speaking practice.`
-          };
-          appState.customVocab.unshift(newEntry);
-          VOCAB_DATA.unshift(newEntry);
-          if (!appState.vocabMastery) appState.vocabMastery = {};
-          appState.vocabMastery[newEntry.id] = 'learning';
-          saveState();
           const selBar = document.getElementById('iosSelectionBar');
           if (selBar) selBar.classList.add('hidden');
-          showToast(`Đã lưu "${word}" vào Kho Từ vựng SRS!`, 'success');
         });
       }
 
@@ -24803,26 +24914,23 @@ const GRAMMAR_PROOFREADING_LAB = [
             const accepted = Array.isArray(q.answers) && q.answers.length ? q.answers : [q.answer || ''];
             const ok = accepted.map(a => normalizeIeltsAnswer(a)).includes(normalizeIeltsAnswer(userVal));
             fillAttempted++;
-            if (ok) fillCorrect++;
+            if (ok) {
+              fillCorrect++;
+              const itemKey = `vfill:${q.id || normalizeIeltsAnswer(q.answer || '')}`;
+              awardUniqueCompletion(itemKey, 10, `Gõ đúng cụm "${q.answer}"`, false);
+            }
             inp.disabled = true;
             document.getElementById('fillScoreBadge').textContent = `Đúng: ${fillCorrect} / ${fillAttempted}`;
             fb.className = `rounded-xl p-4 text-sm space-y-1 ${ok ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'}`;
             fb.innerHTML = `<p><strong>${ok ? '✓ Chính xác!' : `✕ Đáp án chuẩn: ${escapeHtml(q.answer)}`}</strong></p><p class="text-xs">${escapeHtml(q.explain || '')}</p>`;
             fb.classList.remove('hidden');
-          });
-        }
-
-        // 2. Ensure floatSaveSrsBtn also pushes into My Deck SRS immediately
-        const floatSrsBtn = document.getElementById('floatSaveSrsBtn');
-        if (floatSrsBtn) {
-          floatSrsBtn.addEventListener('click', () => {
-            const raw = (cachedSelectionText || window.getSelection()?.toString() || '').trim();
-            const cleanW = raw.replace(/^[.,!?;:"'()]+|[.,!?;:"'()]+$/g, '').slice(0, 80);
-            if (cleanW && typeof window.addCustomVocabToSrs === 'function') {
-              window.addCustomVocabToSrs(cleanW, 'Từ tự lưu từ Reading', '');
+            if (typeof speakText === 'function' && q.answer) {
+              speakText(q.answer, document.getElementById('vocabAccentSelect')?.value || appState.preferredAccent || 'en-GB', 0.92);
             }
           });
         }
+
+        // 2. floatSaveSrsBtn is now unified with window.addCustomVocabToSrs directly in Wave 1 (no duplicate listener)
       })();
 
 
@@ -25465,7 +25573,7 @@ const GRAMMAR_PROOFREADING_LAB = [
 
   
     // ==================== V59 UI/UX & CONTENT OPTIMIZATION SUITE ====================
-    const READING_V59_EXTRA_BRIDGE_QS = {"r-br2": [{"id": "rbr2-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO secondary climate benefits appear when pocket parks link with shaded pedestrian lanes?", "options": ["A. Fewer short private car journeys reduce tailpipe heat emissions.", "B. Shaded building facades lower late-afternoon air-conditioning demand.", "C. Asphalt roads stop absorbing solar radiation.", "D. Municipal councils eliminate all park maintenance costs."], "answer": ["A", "B"], "evidenceId": "rbr2-p6", "evidenceQuote": "fewer short private car journeys reduce tailpipe heat emissions, while shaded building facades cut residential air-conditioning demand during late-afternoon electrical grid peaks", "paraphraseMap": [{"q": "lower air-conditioning demand", "p": "cut residential air-conditioning demand"}], "distractorNote": "Cả hai lợi ích phụ nằm ở câu 3 đoạn F."}, {"id": "rbr2-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] The writer believes urban cooling policies should combine pocket parks with affordable housing protections.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr2-p5", "evidenceQuote": "Effective urban cooling policies therefore pair micro-park construction with long-term affordable housing protections", "paraphraseMap": [{"q": "combine... with", "p": "pair... with"}], "distractorNote": "Câu kết đoạn E thể hiện rõ quan điểm tác giả."}, {"id": "rbr2-q11", "type": "Matching Sentence Endings", "inputType": "select", "text": "11. [Matching Sentence Endings] Involving neighborhood residents in selecting benches and native plants...", "options": ["A. ...dramatically lowers vandalism and strengthens local stewardship.", "B. ...prevents stormwater from reaching tree roots.", "C. ...doubles the electricity needed for street lighting."], "answer": "A", "evidenceId": "rbr2-p6", "evidenceQuote": "involving local residents in selecting benches, native plants, and playground corners dramatically lowers vandalism and builds neighborhood stewardship", "paraphraseMap": [{"q": "strengthens local stewardship", "p": "builds neighborhood stewardship"}], "distractorNote": "Câu cuối đoạn F."}, {"id": "rbr2-q12", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "12. [Fill ≤2 words] A connected network of pocket parks offers shaded rest stops within a _______ walk for elderly residents.", "answer": "five-minute", "answers": ["five-minute", "five minute", "5-minute"], "evidenceId": "rbr2-p2", "evidenceQuote": "provides shaded rest stops within a five-minute walk for elderly residents", "paraphraseMap": [{"q": "offers", "p": "provides"}], "distractorNote": "Điền 'five-minute'."}], "r-br3": [{"id": "rbr3-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "9. [Fill ≤2 words] Sleeping until noon on weekends to repay weekday sleep debt is known as _______.", "answer": "social jetlag", "answers": ["social jetlag"], "evidenceId": "rbr3-p6", "evidenceQuote": "a pattern specialists term social jetlag, which resets the internal clock even further forward", "paraphraseMap": [{"q": "known as", "p": "specialists term"}], "distractorNote": "Điền đúng cụm 'social jetlag'."}, {"id": "rbr3-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO household habits are recommended in family workshops in Paragraph F?", "options": ["A. Dimming bedroom lights in the evening", "B. Keeping phone chargers outside sleeping areas", "C. Drinking energy drinks right after dinner", "D. Sleeping until noon every Sunday"], "answer": ["A", "B"], "evidenceId": "rbr3-p6", "evidenceQuote": "dimming evening bedroom lights, keeping phone chargers outside sleeping areas, and avoiding caffeinated energy drinks after mid-afternoon", "paraphraseMap": [{"q": "recommended in family workshops", "p": "brief family workshops on..."}], "distractorNote": "Tránh bẫy C và D vì bài khuyên ngược lại."}, {"id": "rbr3-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] The writer views matching school schedules with adolescent biology as a low-cost way to improve learning.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr3-p6", "evidenceQuote": "aligning education schedules with adolescent biology is one of the lowest-cost academic interventions available", "paraphraseMap": [{"q": "matching", "p": "aligning"}], "distractorNote": "Câu cuối đoạn F khẳng định đây là can thiệp chi phí thấp nhất."}, {"id": "rbr3-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Chronic deprivation of REM sleep among teenagers...", "options": ["A. ...impairs mathematical reasoning and slows young drivers’ reaction times.", "B. ...eliminates melatonin secretion permanently.", "C. ...improves first-period science attendance."], "answer": "A", "evidenceId": "rbr3-p3", "evidenceQuote": "Chronic REM deprivation impairs mathematical reasoning, slows reaction times among young drivers", "paraphraseMap": [{"q": "deprivation of REM sleep", "p": "Chronic REM deprivation"}], "distractorNote": "Câu cuối đoạn C."}], "r-br4": [{"id": "rbr4-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO packaging reforms help automated optical sorters supply cleaner PET to bioreactors?", "options": ["A. Designing containers around single-resin clear PET", "B. Using water-soluble label adhesives", "C. Gluing metallic foils onto multi-layer pouches", "D. Adding opaque black pigments to beverage bottles"], "answer": ["A", "B"], "evidenceId": "rbr4-p6", "evidenceQuote": "redesigning containers around single-resin clear PET, water-soluble label adhesives, and standardized bottle caps that automated optical sorters can separate at high speed", "paraphraseMap": [{"q": "packaging reforms", "p": "redesigning containers"}], "distractorNote": "C và D là những thứ gây cản trở mà ngành đang loại bỏ."}, {"id": "rbr4-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] Environmental scientists believe biological recycling should replace efforts to cut single-use packaging.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr4-p6", "evidenceQuote": "biological recycling sits below reduction and reuse in the waste hierarchy: cutting unnecessary single-use packaging remains essential", "paraphraseMap": [{"q": "replace efforts to cut", "p": "sits below reduction and reuse... cutting remains essential"}], "distractorNote": "Tái chế sinh học đứng sau giảm thiểu và tái sử dụng."}, {"id": "rbr4-q11", "type": "Short Answer", "inputType": "text", "wordLimit": 2, "text": "11. [Short Answer ≤2 words] Which two specialized enzymes allow Ideonella sakaiensis to snip PET chains?", "answer": "PETase and MHETase", "answers": ["PETase and MHETase", "PETase MHETase"], "evidenceId": "rbr4-p2", "evidenceQuote": "through two specialized enzymes, PETase and MHETase, which snip long synthetic chains", "paraphraseMap": [{"q": "allow", "p": "accomplished this feat through"}], "distractorNote": "Chú ý hai enzyme: PETase và MHETase."}, {"id": "rbr4-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Because mechanical recycling weakens polymer chains under high heat...", "options": ["A. ...clear bottles are often downgraded into carpet fibers or park benches.", "B. ...bacteria digest polyethylene films in under 48 hours.", "C. ...manufacturers stop washing discarded packaging."], "answer": "A", "evidenceId": "rbr4-p1", "evidenceQuote": "forcing manufacturers to downgrade clear beverage bottles into lower-value carpet fibers or park benches", "paraphraseMap": [{"q": "weakens polymer chains", "p": "shortens polymer chains... loses strength"}], "distractorNote": "Câu cuối đoạn A."}], "r-br5": [{"id": "rbr5-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] In Scandinavia and the Netherlands, which TWO industrial byproducts help vertical farms cut energy costs?", "options": ["A. Low-grade waste heat from computer server racks", "B. Purified carbon dioxide captured from industrial exhaust", "C. Refrigerated diesel trucks from rural valleys", "D. Chemical insecticides from open fields"], "answer": ["A", "B"], "evidenceId": "rbr5-p6", "evidenceQuote": "low-grade waste heat from computer racks warms seedling zones during winter, while purified carbon dioxide captured from industrial exhaust accelerates leaf photosynthesis", "paraphraseMap": [{"q": "industrial byproducts", "p": "waste heat... purified carbon dioxide captured from industrial exhaust"}], "distractorNote": "Đoạn F nêu rõ nhiệt thừa từ data center và CO2 tinh lọc."}, {"id": "rbr5-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Smart grid software dims LED arrays during peak evening tariffs and boosts lighting overnight when _______ power is cheap.", "answer": "wind", "answers": ["wind"], "evidenceId": "rbr5-p6", "evidenceQuote": "boosts illumination overnight when wind power is cheap and abundant", "paraphraseMap": [{"q": "boosts lighting", "p": "boosts illumination"}], "distractorNote": "Điền đúng 1 từ 'wind'."}, {"id": "rbr5-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Changing light recipes two days before harvest can sharpen the aroma of culinary herbs.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr5-p3", "evidenceQuote": "alter light recipes forty-eight hours before harvest to intensify the crispness or peppery aroma of herbs", "paraphraseMap": [{"q": "two days", "p": "forty-eight hours"}], "distractorNote": "48 giờ = 2 ngày."}, {"id": "rbr5-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Moving crop cultivation into repurposed urban warehouses...", "options": ["A. ...dramatically shortens refrigerated trucking distances to city supermarkets.", "B. ...eliminates the need for electricity tariffs.", "C. ...allows wheat and rice to grow without light."], "answer": "A", "evidenceId": "rbr5-p1", "evidenceQuote": "By relocating cultivation inside city limits, operators slash the refrigerated trucking distances that ordinarily separate rural valleys from urban supermarkets", "paraphraseMap": [{"q": "shortens", "p": "slash"}], "distractorNote": "Câu cuối đoạn A."}], "r-br6": [{"id": "rbr6-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO local groups are trained to maintain underwater coral nurseries in Paragraph F?", "options": ["A. Local dive guides and tour boat captains", "B. Coastal fishing cooperatives", "C. Deep-sea oil engineers", "D. Urban wastewater inspectors"], "answer": ["A", "B"], "evidenceId": "rbr6-p6", "evidenceQuote": "conservation organizations train local dive guides, tour boat captains, and coastal fishing cooperatives to maintain underwater coral nurseries", "paraphraseMap": [{"q": "local groups", "p": "local dive guides, tour boat captains, and coastal fishing cooperatives"}], "distractorNote": "Đoạn F nêu chính xác hai nhóm cộng đồng ven biển này."}, {"id": "rbr6-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Micro-fragmentation lets cut coral clones fuse into a mature colony within _______ instead of half a century.", "answer": "two years", "answers": ["two years", "2 years"], "evidenceId": "rbr6-p2", "evidenceQuote": "watch them fuse back into a mature colony within two years instead of half a century", "paraphraseMap": [{"q": "within", "p": "within two years"}], "distractorNote": "Điền 'two years' hoặc '2 years'."}, {"id": "rbr6-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Combining coral outplanting with underwater acoustic playback achieves better survival than using either technique alone.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr6-p4", "evidenceQuote": "Combining physical coral outplanting with acoustic playback therefore produces far higher survival rates than either intervention used alone", "paraphraseMap": [{"q": "better survival", "p": "far higher survival rates"}], "distractorNote": "Câu cuối đoạn D."}, {"id": "rbr6-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Without algae-grazing fish such as parrotfish and surgeonfish...", "options": ["A. ...fast-growing seaweed smothers limestone rock and blocks coral larvae from attaching.", "B. ...shrimp produce louder acoustic beacons offshore.", "C. ...boulder corals expand forty times faster naturally."], "answer": "A", "evidenceId": "rbr6-p4", "evidenceQuote": "Without grazing fish, fast-growing seaweed quickly smothers bare limestone skeletons, leaving microscopic coral larvae nowhere to attach", "paraphraseMap": [{"q": "blocks coral larvae from attaching", "p": "leaving microscopic coral larvae nowhere to attach"}], "distractorNote": "Câu 2 đoạn D."}], "r-br7": [{"id": "rbr7-q9", "type": "Yes / No / Not Given", "inputType": "radio", "text": "9. [YNNG] Adult learners must achieve a native-like accent to gain cognitive flexibility from learning a second language.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr7-p6", "evidenceQuote": "measurable executive benefits do not require native-like accent perfection or flawless literary fluency", "paraphraseMap": [{"q": "must achieve", "p": "do not require"}], "distractorNote": "Không cần giọng bản xứ hoàn hảo vẫn đạt lợi ích não bộ."}, {"id": "rbr7-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Just _______ minutes of focused daily practice strengthens neural links between auditory, memory, and attention circuits.", "answer": "thirty", "answers": ["thirty", "30"], "evidenceId": "rbr7-p6", "evidenceQuote": "Even thirty minutes of focused daily practice combining reading, shadowing, vocabulary recall, and spoken interaction steadily strengthens neural connectivity", "paraphraseMap": [{"q": "neural links", "p": "neural connectivity"}], "distractorNote": "Điền 'thirty' hoặc '30'."}, {"id": "rbr7-q11", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "11. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO functions of the dorsolateral prefrontal cortex are highlighted in Paragraph B?", "options": ["A. Filtering out competing distractions", "B. Shifting smoothly between competing tasks", "C. Storing childhood accents permanently", "D. Switching off the second language completely"], "answer": ["A", "B"], "evidenceId": "rbr7-p2", "evidenceQuote": "the executive control hub responsible for filtering distractions, holding goals in working memory, and shifting smoothly between competing tasks", "paraphraseMap": [{"q": "Filtering out", "p": "filtering distractions"}], "distractorNote": "Câu cuối đoạn B."}, {"id": "rbr7-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Lifelong bilingual patients examined in Toronto, Hyderabad, and Edinburgh...", "options": ["A. ...showed Alzheimer’s symptoms four to five years later on average than monolinguals.", "B. ...had smaller combined vocabularies as toddlers.", "C. ...never experienced physical brain pathology."], "answer": "A", "evidenceId": "rbr7-p4", "evidenceQuote": "lifelong bilingual patients developed behavioral symptoms of Alzheimer’s disease an average of four to five years later than monolingual patients", "paraphraseMap": [{"q": "showed symptoms", "p": "developed behavioral symptoms"}], "distractorNote": "Đoạn D."}], "r-br8": [{"id": "rbr8-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO low-temperature heat sources feed fifth-generation district heating loops in Paragraph F?", "options": ["A. Flooded abandoned coal mines", "B. Subway tunnel exhaust and supermarket refrigeration waste", "C. Active volcanic magma chambers", "D. Rooftop coal boilers"], "answer": ["A", "B"], "evidenceId": "rbr8-p6", "evidenceQuote": "harvested from flooded abandoned coal mines, subway tunnel exhaust, sewage treatment outflows, and supermarket refrigeration waste", "paraphraseMap": [{"q": "feed", "p": "harvested from"}], "distractorNote": "Đoạn F liệt kê các nguồn nhiệt thải đô thị 15–30°C."}, {"id": "rbr8-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Compact electric _______ inside apartment blocks boost ambient loop warmth in winter and reverse to cool in summer.", "answer": "heat pumps", "answers": ["heat pumps"], "evidenceId": "rbr8-p6", "evidenceQuote": "Compact electric heat pumps inside each apartment block then boost that ambient warmth to comfortable indoor temperatures in winter and reverse direction to provide efficient cooling in summer", "paraphraseMap": [{"q": "reverse to cool", "p": "reverse direction to provide efficient cooling"}], "distractorNote": "Điền 'heat pumps'."}, {"id": "rbr8-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Heating buildings represents nearly 40 percent of energy use in temperate cities.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr8-p1", "evidenceQuote": "heating buildings accounts for nearly forty percent of energy consumption in temperate cities", "paraphraseMap": [{"q": "represents", "p": "accounts for"}], "distractorNote": "Câu 1 đoạn A."}, {"id": "rbr8-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Deep exploratory drilling deters private utilities primarily because...", "options": ["A. ...it costs millions before rock permeability and flow rates are confirmed.", "B. ...Parisian aquifers are already completely dry.", "C. ...clean freshwater cannot pass through heat exchangers."], "answer": "A", "evidenceId": "rbr8-p5", "evidenceQuote": "Drilling deep exploratory wells costs millions of dollars before a utility knows whether subsurface rock has enough permeability to sustain high flow rates", "paraphraseMap": [{"q": "confirmed", "p": "knows whether"}], "distractorNote": "Câu 2 đoạn E."}], "r-br9": [{"id": "rbr9-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO household habits accelerate community antibiotic resistance in Paragraph F?", "options": ["A. Sharing leftover antibiotic capsules with relatives", "B. Stopping a prescribed course early once fever drops", "C. Completing the full prescribed dose", "D. Asking pharmacists for counseling"], "answer": ["A", "B"], "evidenceId": "rbr9-p6", "evidenceQuote": "share leftover capsules with relatives, or stop taking pills two days early once fever subsides", "paraphraseMap": [{"q": "once fever drops", "p": "once fever subsides"}], "distractorNote": "Đoạn F nêu rõ 2 thói quen sai lầm phổ biến."}, {"id": "rbr9-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] Stopping antibiotics prematurely leaves the toughest, partially resistant bacteria alive to multiply.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr9-p6", "evidenceQuote": "Stopping a prescription prematurely leaves the hardiest, partially resistant bacteria alive to multiply and spread within families", "paraphraseMap": [{"q": "toughest", "p": "hardiest"}], "distractorNote": "'Hardiest' đồng nghĩa với 'toughest'."}, {"id": "rbr9-q11", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "11. [Fill ≤2 words] Clinical audits indicate roughly _______ of outpatient antibiotic prescriptions are unnecessary.", "answer": "one-third", "answers": ["one-third", "one third"], "evidenceId": "rbr9-p2", "evidenceQuote": "Clinical audits consistently show that roughly one-third of outpatient antibiotic prescriptions are unnecessary", "paraphraseMap": [{"q": "indicate", "p": "consistently show"}], "distractorNote": "Điền 'one-third'."}, {"id": "rbr9-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Public-health campaigns combining pharmacist counseling with over-the-counter controls...", "options": ["A. ...have produced sustained reductions in community resistance rates.", "B. ...forced hospitals to stop hip replacements.", "C. ...doubled sales of viral cough antibiotics."], "answer": "A", "evidenceId": "rbr9-p6", "evidenceQuote": "Public-health campaigns that pair clear pharmacist counseling with strict controls on over-the-counter sales have achieved sustained drops in community resistance rates", "paraphraseMap": [{"q": "sustained reductions", "p": "sustained drops"}], "distractorNote": "Đoạn F."}], "r-br10": [{"id": "rbr10-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "9. [Fill ≤2 words] City treasury audits show public libraries typically return between _______ dollars in community benefit for every dollar invested.", "answer": "three and five", "answers": ["three and five", "3 and 5", "3 to 5"], "evidenceId": "rbr10-p6", "evidenceQuote": "municipal libraries typically return between three and five dollars in measurable community benefit for every public dollar invested", "paraphraseMap": [{"q": "public libraries", "p": "municipal libraries"}], "distractorNote": "Chấp nhận 'three and five' hoặc '3 to 5'."}, {"id": "rbr10-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO resilience roles do public libraries fulfill in Paragraph D?", "options": ["A. Providing internet terminals for online job applications and benefit forms", "B. Operating late as air-conditioned cooling centers during heatwaves", "C. Selling discounted e-books to tourists", "D. Replacing municipal hospitals during winter"], "answer": ["A", "B"], "evidenceId": "rbr10-p4", "evidenceQuote": "public library terminals and patient librarians became an essential lifeline for residents lacking home broadband. During severe summer heatwaves in Phoenix and Melbourne, air-conditioned library branches stay open late as official cooling centers", "paraphraseMap": [{"q": "resilience roles", "p": "frontline resilience hubs"}], "distractorNote": "Đoạn D nêu hai vai trò cứu trợ số và tránh nóng."}, {"id": "rbr10-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] The writer argues that commercial algorithms can replicate the democratic community role of physical libraries.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr10-p6", "evidenceQuote": "they anchor democratic neighborhoods in ways no commercial algorithm or private app can replicate", "paraphraseMap": [{"q": "can replicate", "p": "no commercial algorithm or private app can replicate"}], "distractorNote": "Câu kết đoạn F phủ định hoàn toàn."}, {"id": "rbr10-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Embedding full-time social workers inside central library branches...", "options": ["A. ...frees librarians to concentrate on literacy, digital skills, and programming.", "B. ...reduces visitor foot traffic in Nordic cities.", "C. ...closes down 3D printing workshops."], "answer": "A", "evidenceId": "rbr10-p5", "evidenceQuote": "allowing librarians to focus on literacy, digital skills, and community programming", "paraphraseMap": [{"q": "frees... to concentrate on", "p": "allowing... to focus on"}], "distractorNote": "Câu cuối đoạn E."}], "r-br11": [{"id": "rbr11-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "9. [Fill ≤2 words] Feeling pressured to reply to late-evening messages to prove one is working is termed _______.", "answer": "digital presenteeism", "answers": ["digital presenteeism"], "evidenceId": "rbr11-p6", "evidenceQuote": "a habit known as digital presenteeism that rapidly drives burnout while lowering deep analytical quality", "paraphraseMap": [{"q": "termed", "p": "known as"}], "distractorNote": "Điền đúng 2 từ 'digital presenteeism'."}, {"id": "rbr11-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO norms are specified in written team charters in Paragraph F?", "options": ["A. Core overlap hours for live calls", "B. Protected no-meeting blocks for solitary concentration", "C. Mandatory late-evening email checks", "D. Five-day weekly commuting for all graduates"], "answer": ["A", "B"], "evidenceId": "rbr11-p6", "evidenceQuote": "specifying core overlap hours for live calls, protected no-meeting blocks for solitary concentration, and expected response times", "paraphraseMap": [{"q": "written team charters", "p": "concise written agreements"}], "distractorNote": "Câu 3 đoạn F."}, {"id": "rbr11-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Pairing new graduates with office mentors on anchor days helps transfer informal workplace skills without daily commuting.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr11-p6", "evidenceQuote": "pair newly hired graduates with designated office mentors on shared anchor days so tacit workplace skills", "paraphraseMap": [{"q": "informal workplace skills", "p": "tacit workplace skills"}], "distractorNote": "Câu cuối đoạn F."}, {"id": "rbr11-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Psychologists describe casual hallway conversations between separate departments as...", "options": ["A. ...weak ties that spark fresh ideas and expose emerging bottlenecks.", "B. ...ergonomic hazards that cause neck strain.", "C. ...unnecessary interruptions to solitary coding."], "answer": "A", "evidenceId": "rbr11-p3", "evidenceQuote": "casual corridor chats between separate departments as weak ties—the unpredictable encounters that spark fresh ideas and alert managers to emerging bottlenecks", "paraphraseMap": [{"q": "hallway conversations", "p": "corridor chats"}], "distractorNote": "Đoạn C."}]};
+    const READING_V59_EXTRA_BRIDGE_QS = {"r-br2": [{"id": "rbr2-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO secondary climate benefits appear when pocket parks link with shaded pedestrian lanes?", "options": ["A. Fewer short private car journeys reduce tailpipe heat emissions.", "B. Shaded building facades lower late-afternoon air-conditioning demand.", "C. Asphalt roads stop absorbing solar radiation.", "D. Municipal councils eliminate all park maintenance costs."], "answer": ["A", "B"], "evidenceId": "rbr2-p6", "evidenceQuote": "fewer short private car journeys reduce tailpipe heat emissions, while shaded building facades cut residential air-conditioning demand during late-afternoon electrical grid peaks", "paraphraseMap": [{"q": "lower air-conditioning demand", "p": "cut residential air-conditioning demand"}], "distractorNote": "Cả hai lợi ích phụ nằm ở câu 3 đoạn F."}, {"id": "rbr2-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] The writer believes urban cooling policies should combine pocket parks with affordable housing protections.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr2-p5", "evidenceQuote": "Effective urban cooling policies therefore pair micro-park construction with long-term affordable housing protections", "paraphraseMap": [{"q": "combine... with", "p": "pair... with"}], "distractorNote": "Câu kết đoạn E thể hiện rõ quan điểm tác giả."}, {"id": "rbr2-q11", "type": "Matching Sentence Endings", "inputType": "select", "text": "11. [Matching Sentence Endings] Involving neighborhood residents in selecting benches and native plants...", "options": ["A. ...dramatically lowers vandalism and strengthens local stewardship.", "B. ...prevents stormwater from reaching tree roots.", "C. ...doubles the electricity needed for street lighting."], "answer": "A", "evidenceId": "rbr2-p6", "evidenceQuote": "involving local residents in selecting benches, native plants, and playground corners dramatically lowers vandalism and builds neighborhood stewardship", "paraphraseMap": [{"q": "strengthens local stewardship", "p": "builds neighborhood stewardship"}], "distractorNote": "Câu cuối đoạn F."}, {"id": "rbr2-q12", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "12. [Fill ≤2 words] A connected network of pocket parks offers shaded rest stops within a _______ walk for elderly residents.", "answer": "five-minute", "answers": ["five-minute", "five minute", "5-minute"], "evidenceId": "rbr2-p2", "evidenceQuote": "provides shaded rest stops within a five-minute walk for elderly residents", "paraphraseMap": [{"q": "offers", "p": "provides"}], "distractorNote": "Điền 'five-minute'."}], "r-br3": [{"id": "rbr3-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "9. [Fill ≤2 words] Sleeping until noon on weekends to repay weekday sleep debt is known as _______.", "answer": "social jetlag", "answers": ["social jetlag"], "evidenceId": "rbr3-p6", "evidenceQuote": "a pattern specialists term social jetlag, which resets the internal clock even further forward", "paraphraseMap": [{"q": "known as", "p": "specialists term"}], "distractorNote": "Điền đúng cụm 'social jetlag'."}, {"id": "rbr3-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO household habits are recommended in family workshops in Paragraph F?", "options": ["A. Dimming bedroom lights in the evening", "B. Keeping phone chargers outside sleeping areas", "C. Drinking energy drinks right after dinner", "D. Sleeping until noon every Sunday"], "answer": ["A", "B"], "evidenceId": "rbr3-p6", "evidenceQuote": "dimming evening bedroom lights, keeping phone chargers outside sleeping areas, and avoiding caffeinated energy drinks after mid-afternoon", "paraphraseMap": [{"q": "recommended in family workshops", "p": "brief family workshops on..."}], "distractorNote": "Tránh bẫy C và D vì bài khuyên ngược lại."}, {"id": "rbr3-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] The writer views matching school schedules with adolescent biology as a low-cost way to improve learning.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr3-p6", "evidenceQuote": "aligning education schedules with adolescent biology is one of the lowest-cost academic interventions available", "paraphraseMap": [{"q": "matching", "p": "aligning"}], "distractorNote": "Câu cuối đoạn F khẳng định đây là can thiệp chi phí thấp nhất."}, {"id": "rbr3-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Chronic deprivation of REM sleep among teenagers...", "options": ["A. ...impairs mathematical reasoning and slows young drivers’ reaction times.", "B. ...eliminates melatonin secretion permanently.", "C. ...improves first-period science attendance."], "answer": "A", "evidenceId": "rbr3-p3", "evidenceQuote": "Chronic REM deprivation impairs mathematical reasoning, slows reaction times among young drivers", "paraphraseMap": [{"q": "deprivation of REM sleep", "p": "Chronic REM deprivation"}], "distractorNote": "Câu cuối đoạn C."}], "r-br4": [{"id": "rbr4-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO packaging reforms help automated optical sorters supply cleaner PET to bioreactors?", "options": ["A. Designing containers around single-resin clear PET", "B. Using water-soluble label adhesives", "C. Gluing metallic foils onto multi-layer pouches", "D. Adding opaque black pigments to beverage bottles"], "answer": ["A", "B"], "evidenceId": "rbr4-p6", "evidenceQuote": "redesigning containers around single-resin clear PET, water-soluble label adhesives, and standardized bottle caps that automated optical sorters can separate at high speed", "paraphraseMap": [{"q": "packaging reforms", "p": "redesigning containers"}], "distractorNote": "C và D là những thứ gây cản trở mà ngành đang loại bỏ."}, {"id": "rbr4-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] Environmental scientists believe biological recycling should replace efforts to cut single-use packaging.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr4-p6", "evidenceQuote": "biological recycling sits below reduction and reuse in the waste hierarchy: cutting unnecessary single-use packaging remains essential", "paraphraseMap": [{"q": "replace efforts to cut", "p": "sits below reduction and reuse... cutting remains essential"}], "distractorNote": "Tái chế sinh học đứng sau giảm thiểu và tái sử dụng."}, {"id": "rbr4-q11", "type": "Short Answer", "inputType": "text", "wordLimit": 3, "text": "11. [Short Answer ≤3 words] Which two specialized enzymes allow Ideonella sakaiensis to snip PET chains?", "answer": "PETase and MHETase", "answers": ["PETase and MHETase", "PETase MHETase"], "evidenceId": "rbr4-p2", "evidenceQuote": "through two specialized enzymes, PETase and MHETase, which snip long synthetic chains", "paraphraseMap": [{"q": "allow", "p": "accomplished this feat through"}], "distractorNote": "Chú ý hai enzyme: PETase và MHETase."}, {"id": "rbr4-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Because mechanical recycling weakens polymer chains under high heat...", "options": ["A. ...clear bottles are often downgraded into carpet fibers or park benches.", "B. ...bacteria digest polyethylene films in under 48 hours.", "C. ...manufacturers stop washing discarded packaging."], "answer": "A", "evidenceId": "rbr4-p1", "evidenceQuote": "forcing manufacturers to downgrade clear beverage bottles into lower-value carpet fibers or park benches", "paraphraseMap": [{"q": "weakens polymer chains", "p": "shortens polymer chains... loses strength"}], "distractorNote": "Câu cuối đoạn A."}], "r-br5": [{"id": "rbr5-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] In Scandinavia and the Netherlands, which TWO industrial byproducts help vertical farms cut energy costs?", "options": ["A. Low-grade waste heat from computer server racks", "B. Purified carbon dioxide captured from industrial exhaust", "C. Refrigerated diesel trucks from rural valleys", "D. Chemical insecticides from open fields"], "answer": ["A", "B"], "evidenceId": "rbr5-p6", "evidenceQuote": "low-grade waste heat from computer racks warms seedling zones during winter, while purified carbon dioxide captured from industrial exhaust accelerates leaf photosynthesis", "paraphraseMap": [{"q": "industrial byproducts", "p": "waste heat... purified carbon dioxide captured from industrial exhaust"}], "distractorNote": "Đoạn F nêu rõ nhiệt thừa từ data center và CO2 tinh lọc."}, {"id": "rbr5-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Smart grid software dims LED arrays during peak evening tariffs and boosts lighting overnight when _______ power is cheap.", "answer": "wind", "answers": ["wind"], "evidenceId": "rbr5-p6", "evidenceQuote": "boosts illumination overnight when wind power is cheap and abundant", "paraphraseMap": [{"q": "boosts lighting", "p": "boosts illumination"}], "distractorNote": "Điền đúng 1 từ 'wind'."}, {"id": "rbr5-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Changing light recipes two days before harvest can sharpen the aroma of culinary herbs.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr5-p3", "evidenceQuote": "alter light recipes forty-eight hours before harvest to intensify the crispness or peppery aroma of herbs", "paraphraseMap": [{"q": "two days", "p": "forty-eight hours"}], "distractorNote": "48 giờ = 2 ngày."}, {"id": "rbr5-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Moving crop cultivation into repurposed urban warehouses...", "options": ["A. ...dramatically shortens refrigerated trucking distances to city supermarkets.", "B. ...eliminates the need for electricity tariffs.", "C. ...allows wheat and rice to grow without light."], "answer": "A", "evidenceId": "rbr5-p1", "evidenceQuote": "By relocating cultivation inside city limits, operators slash the refrigerated trucking distances that ordinarily separate rural valleys from urban supermarkets", "paraphraseMap": [{"q": "shortens", "p": "slash"}], "distractorNote": "Câu cuối đoạn A."}], "r-br6": [{"id": "rbr6-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO local groups are trained to maintain underwater coral nurseries in Paragraph F?", "options": ["A. Local dive guides and tour boat captains", "B. Coastal fishing cooperatives", "C. Deep-sea oil engineers", "D. Urban wastewater inspectors"], "answer": ["A", "B"], "evidenceId": "rbr6-p6", "evidenceQuote": "conservation organizations train local dive guides, tour boat captains, and coastal fishing cooperatives to maintain underwater coral nurseries", "paraphraseMap": [{"q": "local groups", "p": "local dive guides, tour boat captains, and coastal fishing cooperatives"}], "distractorNote": "Đoạn F nêu chính xác hai nhóm cộng đồng ven biển này."}, {"id": "rbr6-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Micro-fragmentation lets cut coral clones fuse into a mature colony within _______ instead of half a century.", "answer": "two years", "answers": ["two years", "2 years"], "evidenceId": "rbr6-p2", "evidenceQuote": "watch them fuse back into a mature colony within two years instead of half a century", "paraphraseMap": [{"q": "within", "p": "within two years"}], "distractorNote": "Điền 'two years' hoặc '2 years'."}, {"id": "rbr6-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Combining coral outplanting with underwater acoustic playback achieves better survival than using either technique alone.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr6-p4", "evidenceQuote": "Combining physical coral outplanting with acoustic playback therefore produces far higher survival rates than either intervention used alone", "paraphraseMap": [{"q": "better survival", "p": "far higher survival rates"}], "distractorNote": "Câu cuối đoạn D."}, {"id": "rbr6-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Without algae-grazing fish such as parrotfish and surgeonfish...", "options": ["A. ...fast-growing seaweed smothers limestone rock and blocks coral larvae from attaching.", "B. ...shrimp produce louder acoustic beacons offshore.", "C. ...boulder corals expand forty times faster naturally."], "answer": "A", "evidenceId": "rbr6-p4", "evidenceQuote": "Without grazing fish, fast-growing seaweed quickly smothers bare limestone skeletons, leaving microscopic coral larvae nowhere to attach", "paraphraseMap": [{"q": "blocks coral larvae from attaching", "p": "leaving microscopic coral larvae nowhere to attach"}], "distractorNote": "Câu 2 đoạn D."}], "r-br7": [{"id": "rbr7-q9", "type": "Yes / No / Not Given", "inputType": "radio", "text": "9. [YNNG] Adult learners must achieve a native-like accent to gain cognitive flexibility from learning a second language.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr7-p6", "evidenceQuote": "measurable executive benefits do not require native-like accent perfection or flawless literary fluency", "paraphraseMap": [{"q": "must achieve", "p": "do not require"}], "distractorNote": "Không cần giọng bản xứ hoàn hảo vẫn đạt lợi ích não bộ."}, {"id": "rbr7-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Just _______ minutes of focused daily practice strengthens neural links between auditory, memory, and attention circuits.", "answer": "thirty", "answers": ["thirty", "30"], "evidenceId": "rbr7-p6", "evidenceQuote": "Even thirty minutes of focused daily practice combining reading, shadowing, vocabulary recall, and spoken interaction steadily strengthens neural connectivity", "paraphraseMap": [{"q": "neural links", "p": "neural connectivity"}], "distractorNote": "Điền 'thirty' hoặc '30'."}, {"id": "rbr7-q11", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "11. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO functions of the dorsolateral prefrontal cortex are highlighted in Paragraph B?", "options": ["A. Filtering out competing distractions", "B. Shifting smoothly between competing tasks", "C. Storing childhood accents permanently", "D. Switching off the second language completely"], "answer": ["A", "B"], "evidenceId": "rbr7-p2", "evidenceQuote": "the executive control hub responsible for filtering distractions, holding goals in working memory, and shifting smoothly between competing tasks", "paraphraseMap": [{"q": "Filtering out", "p": "filtering distractions"}], "distractorNote": "Câu cuối đoạn B."}, {"id": "rbr7-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Lifelong bilingual patients examined in Toronto, Hyderabad, and Edinburgh...", "options": ["A. ...showed Alzheimer’s symptoms four to five years later on average than monolinguals.", "B. ...had smaller combined vocabularies as toddlers.", "C. ...never experienced physical brain pathology."], "answer": "A", "evidenceId": "rbr7-p4", "evidenceQuote": "lifelong bilingual patients developed behavioral symptoms of Alzheimer’s disease an average of four to five years later than monolingual patients", "paraphraseMap": [{"q": "showed symptoms", "p": "developed behavioral symptoms"}], "distractorNote": "Đoạn D."}], "r-br8": [{"id": "rbr8-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO low-temperature heat sources feed fifth-generation district heating loops in Paragraph F?", "options": ["A. Flooded abandoned coal mines", "B. Subway tunnel exhaust and supermarket refrigeration waste", "C. Active volcanic magma chambers", "D. Rooftop coal boilers"], "answer": ["A", "B"], "evidenceId": "rbr8-p6", "evidenceQuote": "harvested from flooded abandoned coal mines, subway tunnel exhaust, sewage treatment outflows, and supermarket refrigeration waste", "paraphraseMap": [{"q": "feed", "p": "harvested from"}], "distractorNote": "Đoạn F liệt kê các nguồn nhiệt thải đô thị 15–30°C."}, {"id": "rbr8-q10", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "10. [Fill ≤2 words] Compact electric _______ inside apartment blocks boost ambient loop warmth in winter and reverse to cool in summer.", "answer": "heat pumps", "answers": ["heat pumps"], "evidenceId": "rbr8-p6", "evidenceQuote": "Compact electric heat pumps inside each apartment block then boost that ambient warmth to comfortable indoor temperatures in winter and reverse direction to provide efficient cooling in summer", "paraphraseMap": [{"q": "reverse to cool", "p": "reverse direction to provide efficient cooling"}], "distractorNote": "Điền 'heat pumps'."}, {"id": "rbr8-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Heating buildings represents nearly 40 percent of energy use in temperate cities.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr8-p1", "evidenceQuote": "heating buildings accounts for nearly forty percent of energy consumption in temperate cities", "paraphraseMap": [{"q": "represents", "p": "accounts for"}], "distractorNote": "Câu 1 đoạn A."}, {"id": "rbr8-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Deep exploratory drilling deters private utilities primarily because...", "options": ["A. ...it costs millions before rock permeability and flow rates are confirmed.", "B. ...Parisian aquifers are already completely dry.", "C. ...clean freshwater cannot pass through heat exchangers."], "answer": "A", "evidenceId": "rbr8-p5", "evidenceQuote": "Drilling deep exploratory wells costs millions of dollars before a utility knows whether subsurface rock has enough permeability to sustain high flow rates", "paraphraseMap": [{"q": "confirmed", "p": "knows whether"}], "distractorNote": "Câu 2 đoạn E."}], "r-br9": [{"id": "rbr9-q9", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "9. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO household habits accelerate community antibiotic resistance in Paragraph F?", "options": ["A. Sharing leftover antibiotic capsules with relatives", "B. Stopping a prescribed course early once fever drops", "C. Completing the full prescribed dose", "D. Asking pharmacists for counseling"], "answer": ["A", "B"], "evidenceId": "rbr9-p6", "evidenceQuote": "share leftover capsules with relatives, or stop taking pills two days early once fever subsides", "paraphraseMap": [{"q": "once fever drops", "p": "once fever subsides"}], "distractorNote": "Đoạn F nêu rõ 2 thói quen sai lầm phổ biến."}, {"id": "rbr9-q10", "type": "Yes / No / Not Given", "inputType": "radio", "text": "10. [YNNG] Stopping antibiotics prematurely leaves the toughest, partially resistant bacteria alive to multiply.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr9-p6", "evidenceQuote": "Stopping a prescription prematurely leaves the hardiest, partially resistant bacteria alive to multiply and spread within families", "paraphraseMap": [{"q": "toughest", "p": "hardiest"}], "distractorNote": "'Hardiest' đồng nghĩa với 'toughest'."}, {"id": "rbr9-q11", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "11. [Fill ≤2 words] Clinical audits indicate roughly _______ of outpatient antibiotic prescriptions are unnecessary.", "answer": "one-third", "answers": ["one-third", "one third"], "evidenceId": "rbr9-p2", "evidenceQuote": "Clinical audits consistently show that roughly one-third of outpatient antibiotic prescriptions are unnecessary", "paraphraseMap": [{"q": "indicate", "p": "consistently show"}], "distractorNote": "Điền 'one-third'."}, {"id": "rbr9-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Public-health campaigns combining pharmacist counseling with over-the-counter controls...", "options": ["A. ...have produced sustained reductions in community resistance rates.", "B. ...forced hospitals to stop hip replacements.", "C. ...doubled sales of viral cough antibiotics."], "answer": "A", "evidenceId": "rbr9-p6", "evidenceQuote": "Public-health campaigns that pair clear pharmacist counseling with strict controls on over-the-counter sales have achieved sustained drops in community resistance rates", "paraphraseMap": [{"q": "sustained reductions", "p": "sustained drops"}], "distractorNote": "Đoạn F."}], "r-br10": [{"id": "rbr10-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 3, "text": "9. [Fill ≤3 words] City treasury audits show public libraries typically return between _______ dollars in community benefit for every dollar invested.", "answer": "three and five", "answers": ["three and five", "3 and 5", "3 to 5"], "evidenceId": "rbr10-p6", "evidenceQuote": "municipal libraries typically return between three and five dollars in measurable community benefit for every public dollar invested", "paraphraseMap": [{"q": "public libraries", "p": "municipal libraries"}], "distractorNote": "Chấp nhận 'three and five' hoặc '3 to 5'."}, {"id": "rbr10-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO resilience roles do public libraries fulfill in Paragraph D?", "options": ["A. Providing internet terminals for online job applications and benefit forms", "B. Operating late as air-conditioned cooling centers during heatwaves", "C. Selling discounted e-books to tourists", "D. Replacing municipal hospitals during winter"], "answer": ["A", "B"], "evidenceId": "rbr10-p4", "evidenceQuote": "public library terminals and patient librarians became an essential lifeline for residents lacking home broadband. During severe summer heatwaves in Phoenix and Melbourne, air-conditioned library branches stay open late as official cooling centers", "paraphraseMap": [{"q": "resilience roles", "p": "frontline resilience hubs"}], "distractorNote": "Đoạn D nêu hai vai trò cứu trợ số và tránh nóng."}, {"id": "rbr10-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] The writer argues that commercial algorithms can replicate the democratic community role of physical libraries.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "NO", "evidenceId": "rbr10-p6", "evidenceQuote": "they anchor democratic neighborhoods in ways no commercial algorithm or private app can replicate", "paraphraseMap": [{"q": "can replicate", "p": "no commercial algorithm or private app can replicate"}], "distractorNote": "Câu kết đoạn F phủ định hoàn toàn."}, {"id": "rbr10-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Embedding full-time social workers inside central library branches...", "options": ["A. ...frees librarians to concentrate on literacy, digital skills, and programming.", "B. ...reduces visitor foot traffic in Nordic cities.", "C. ...closes down 3D printing workshops."], "answer": "A", "evidenceId": "rbr10-p5", "evidenceQuote": "allowing librarians to focus on literacy, digital skills, and community programming", "paraphraseMap": [{"q": "frees... to concentrate on", "p": "allowing... to focus on"}], "distractorNote": "Câu cuối đoạn E."}], "r-br11": [{"id": "rbr11-q9", "type": "Summary Completion", "inputType": "text", "wordLimit": 2, "text": "9. [Fill ≤2 words] Feeling pressured to reply to late-evening messages to prove one is working is termed _______.", "answer": "digital presenteeism", "answers": ["digital presenteeism"], "evidenceId": "rbr11-p6", "evidenceQuote": "a habit known as digital presenteeism that rapidly drives burnout while lowering deep analytical quality", "paraphraseMap": [{"q": "termed", "p": "known as"}], "distractorNote": "Điền đúng 2 từ 'digital presenteeism'."}, {"id": "rbr11-q10", "type": "Multiple Choice (Choose TWO)", "inputType": "checkbox", "maxSelect": 2, "text": "10. [Chọn ĐÚNG 2 ĐÁP ÁN] Which TWO norms are specified in written team charters in Paragraph F?", "options": ["A. Core overlap hours for live calls", "B. Protected no-meeting blocks for solitary concentration", "C. Mandatory late-evening email checks", "D. Five-day weekly commuting for all graduates"], "answer": ["A", "B"], "evidenceId": "rbr11-p6", "evidenceQuote": "specifying core overlap hours for live calls, protected no-meeting blocks for solitary concentration, and expected response times", "paraphraseMap": [{"q": "written team charters", "p": "concise written agreements"}], "distractorNote": "Câu 3 đoạn F."}, {"id": "rbr11-q11", "type": "Yes / No / Not Given", "inputType": "radio", "text": "11. [YNNG] Pairing new graduates with office mentors on anchor days helps transfer informal workplace skills without daily commuting.", "options": ["YES", "NO", "NOT GIVEN"], "answer": "YES", "evidenceId": "rbr11-p6", "evidenceQuote": "pair newly hired graduates with designated office mentors on shared anchor days so tacit workplace skills", "paraphraseMap": [{"q": "informal workplace skills", "p": "tacit workplace skills"}], "distractorNote": "Câu cuối đoạn F."}, {"id": "rbr11-q12", "type": "Matching Sentence Endings", "inputType": "select", "text": "12. [Matching Sentence Endings] Psychologists describe casual hallway conversations between separate departments as...", "options": ["A. ...weak ties that spark fresh ideas and expose emerging bottlenecks.", "B. ...ergonomic hazards that cause neck strain.", "C. ...unnecessary interruptions to solitary coding."], "answer": "A", "evidenceId": "rbr11-p3", "evidenceQuote": "casual corridor chats between separate departments as weak ties—the unpredictable encounters that spark fresh ideas and alert managers to emerging bottlenecks", "paraphraseMap": [{"q": "hallway conversations", "p": "corridor chats"}], "distractorNote": "Đoạn C."}]};
 
     // 59.1 Upgrade 10 Reading Bridge Passages from 8 -> 12 Qs each (120 Qs total, 36-40Q per Mock Test 4-8!)
     (function upgradeBridgeQuestionsV59() {
@@ -26201,11 +26309,14 @@ const GRAMMAR_PROOFREADING_LAB = [
         if (!currentNextTask) return;
         if (!appState.roadmapChecks) appState.roadmapChecks = {};
         appState.roadmapChecks[currentNextTask.id] = true;
-        saveState();
-        if (typeof addDailyXp === 'function') addDailyXp(15, `Hoàn thành cột mốc: ${currentNextTask.text.slice(0, 40)}`);
+        if (typeof awardUniqueCompletion === 'function') {
+          awardUniqueCompletion(`roadmap:${currentNextTask.id}`, 15, `Hoàn thành cột mốc: ${currentNextTask.text.slice(0, 40)}`, false);
+        } else {
+          saveState();
+          if (typeof showToast === 'function') showToast('Đã đánh dấu xong và đồng bộ vào Lộ trình 4 tuần!', 'success');
+        }
         if (typeof renderRoadmap === 'function') renderRoadmap();
         renderFocusCard();
-        if (typeof showToast === 'function') showToast('Đã đánh dấu xong và đồng bộ vào Lộ trình 4 tuần!', 'success');
       });
 
       if (typeof renderRoadmap === 'function') renderRoadmap();
@@ -26222,16 +26333,18 @@ const GRAMMAR_PROOFREADING_LAB = [
     // Hướng dẫn nhanh: Điền firebaseConfig của bạn vào DEFAULT_FIREBASE_CONFIG bên dưới trước khi đẩy lên GitHub Pages
     // (hoặc dán trực tiếp ngay trong cửa sổ Tài khoản Cloud ☁ trên giao diện).
     const DEFAULT_FIREBASE_CONFIG = {
-      apiKey: '',
-      authDomain: '',
-      projectId: '',
-      storageBucket: '',
-      messagingSenderId: '',
-      appId: ''
+      apiKey: 'AIzaSyBdI7p-sbrSwLjdm7JGmzBk0Q8mopH4sZY',
+      authDomain: 'ielts-mastery-5e170.firebaseapp.com',
+      projectId: 'ielts-mastery-5e170',
+      storageBucket: 'ielts-mastery-5e170.firebasestorage.app',
+      messagingSenderId: '386455064990',
+      appId: '1:386455064990:web:c0d8b3ab958d159c1e068f',
+      measurementId: 'G-0K2EP5GCVL'
     };
 
     (function initFirebaseCloudSyncV63() {
       const LS_FB_CFG_KEY = 'ielts_firebase_config_v1';
+      const LS_FB_DISABLED_KEY = 'ielts_firebase_disabled_v1';
       const LS_CLOUD_TS_KEY = 'ielts_cloud_updated_at_v1';
       const LS_CLOUD_UID_KEY = 'ielts_cloud_uid_v1';
       const LS_LOCAL_MODIFIED_KEY = 'ielts_local_modified_at_v1';
@@ -26324,6 +26437,7 @@ const GRAMMAR_PROOFREADING_LAB = [
 
       function getActiveFirebaseConfig() {
         try {
+          if (localStorage.getItem(LS_FB_DISABLED_KEY) === '1') return null;
           const saved = JSON.parse(localStorage.getItem(LS_FB_CFG_KEY) || 'null');
           if (saved && saved.apiKey && saved.projectId) return saved;
         } catch {}
@@ -26366,7 +26480,14 @@ const GRAMMAR_PROOFREADING_LAB = [
             : 'bg-slate-400';
           statusDot.className = `absolute top-1 right-1 w-2 h-2 rounded-full ring-2 ring-white ${cls}`;
         }
-        if (syncBadge && (label || lastSyncLabel)) syncBadge.textContent = label || lastSyncLabel;
+        if (syncBadge) {
+          if (label || lastSyncLabel) syncBadge.textContent = label || lastSyncLabel;
+          const badgeCls = state === 'synced' ? 'bg-emerald-600'
+            : state === 'syncing' ? 'bg-amber-500'
+            : state === 'error' ? 'bg-rose-600'
+            : 'bg-slate-500';
+          syncBadge.className = `px-2 py-0.5 rounded-full text-white text-[10px] font-bold ${badgeCls}`;
+        }
       }
 
       function updateConfigUI() {
@@ -26443,7 +26564,12 @@ const GRAMMAR_PROOFREADING_LAB = [
           return true;
         } catch (err) {
           setSyncStatus('error', 'Lỗi đồng bộ');
-          if (!silent && typeof showToast === 'function') showToast(`Không thể lưu lên Cloud: ${err.message || err}`, 'error');
+          const isPermErr = (err && err.code === 'permission-denied') || /Missing or insufficient permissions/i.test(String(err && err.message || err));
+          const errMsg = isPermErr
+            ? 'Firestore từ chối quyền ghi (permission-denied). Hãy vào Firebase Console → Firestore Database → Rules và bấm Publish quy tắc users/{userId}.'
+            : `Không thể lưu lên Cloud: ${err.message || err}`;
+          if (lastSyncEl) lastSyncEl.textContent = errMsg;
+          if (!silent && typeof showToast === 'function') showToast(errMsg, 'error');
           return false;
         }
       }
@@ -26459,22 +26585,30 @@ const GRAMMAR_PROOFREADING_LAB = [
 
           if (!snap.exists) {
             if (isDifferentAccount) {
-              // Switched to a brand-new account on the same browser: do NOT overwrite new account with previous user's local data
-              isRestoringFromCloud = true;
+              // Switched to a brand-new account on the same browser: write clean doc to Firestore FIRST so local data is preserved if cloud write fails
               if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
               const cleanState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+              const now = Date.now();
+              const cleanPayload = {
+                username: currentUser ? emailToUsername(currentUser.email) : '',
+                updatedAt: now,
+                appState: cleanState,
+                writingDrafts: {},
+                focusMode: ''
+              };
+              await fbDb.collection('users').doc(targetUid).set(cleanPayload);
+              isRestoringFromCloud = true;
               try {
                 localStorage.setItem('ielts_mastery_state_v2', JSON.stringify(cleanState));
                 localStorage.removeItem('ielts_v59_writing_drafts');
+                localStorage.removeItem('ielts_focus_mode_v60');
+                safeWriteLocalSyncMeta(targetUid, now);
               } catch {}
               appState = loadState();
-              isRestoringFromCloud = false;
-              const ok = await pushProgressToCloud(true);
-              if (ok) {
-                if (typeof showToast === 'function') showToast('Đã khởi tạo không gian học mới cho tài khoản này!', 'info');
-                setTimeout(() => { try { window.location.reload(); } catch {} }, 650);
-              }
-              return ok;
+              setSyncStatus('synced', 'Đã đồng bộ');
+              if (typeof showToast === 'function') showToast('Đã khởi tạo không gian học mới cho tài khoản này!', 'info');
+              setTimeout(() => { try { window.location.reload(); } catch {} }, 650);
+              return true;
             }
             // Same user or guest upgrading to cloud account -> upload current local progress
             return await pushProgressToCloud(true);
@@ -26527,6 +26661,8 @@ const GRAMMAR_PROOFREADING_LAB = [
               }
               if (typeof data.focusMode === 'string' && data.focusMode) {
                 localStorage.setItem('ielts_focus_mode_v60', data.focusMode);
+              } else {
+                localStorage.removeItem('ielts_focus_mode_v60');
               }
               wroteOk = safeWriteLocalSyncMeta(targetUid, effectiveTs);
               appState = loadState();
@@ -26572,12 +26708,12 @@ const GRAMMAR_PROOFREADING_LAB = [
       };
 
       window.__flushCloudSyncNow = function flushCloudSyncNow() {
-        if (!fbDb || !currentUser || isRestoringFromCloud) return;
+        if (!fbDb || !currentUser || isRestoringFromCloud) return Promise.resolve(false);
         if (syncTimer) {
           clearTimeout(syncTimer);
           syncTimer = null;
         }
-        pushProgressToCloud(true);
+        return pushProgressToCloud(true);
       };
 
       // Flush pending debounced cloud sync before the tab hides or closes
@@ -26691,7 +26827,10 @@ const GRAMMAR_PROOFREADING_LAB = [
           setError('Cấu hình Firebase không hợp lệ — cần có ít nhất apiKey và projectId.');
           return;
         }
-        try { localStorage.setItem(LS_FB_CFG_KEY, JSON.stringify(parsed)); } catch {}
+        try {
+          localStorage.removeItem(LS_FB_DISABLED_KEY);
+          localStorage.setItem(LS_FB_CFG_KEY, JSON.stringify(parsed));
+        } catch {}
         setError('');
         await teardownFirebaseInstance();
         const ok = ensureFirebaseInitialized();
@@ -26703,7 +26842,12 @@ const GRAMMAR_PROOFREADING_LAB = [
       });
 
       if (clearCfgBtn && cfgInp) clearCfgBtn.addEventListener('click', async () => {
-        try { localStorage.removeItem(LS_FB_CFG_KEY); } catch {}
+        try {
+          localStorage.removeItem(LS_FB_CFG_KEY);
+          localStorage.removeItem(LS_CLOUD_UID_KEY);
+          localStorage.removeItem(LS_CLOUD_TS_KEY);
+          localStorage.setItem(LS_FB_DISABLED_KEY, '1');
+        } catch {}
         cfgInp.value = '';
         setError('');
         await teardownFirebaseInstance();
@@ -26734,22 +26878,46 @@ const GRAMMAR_PROOFREADING_LAB = [
           const email = usernameToEmail(uname);
           if (authMode === 'register') {
             isRegistering = true;
+            if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
             const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
             currentUser = (cred && cred.user) || fbAuth.currentUser;
             updateAuthUI();
             const lastUid = localStorage.getItem(LS_CLOUD_UID_KEY) || '';
             const switchedAccount = Boolean(lastUid && currentUser && lastUid !== currentUser.uid);
+            let pushed = false;
             if (switchedAccount) {
-              isRestoringFromCloud = true;
+              // Write clean doc to Firestore FIRST so previous account's local data is preserved if cloud write fails
+              setSyncStatus('syncing', 'Đang lưu...');
               const cleanState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+              const now = Date.now();
+              const cleanPayload = {
+                username: currentUser ? emailToUsername(currentUser.email) : uname,
+                updatedAt: now,
+                appState: cleanState,
+                writingDrafts: {},
+                focusMode: ''
+              };
               try {
-                localStorage.setItem('ielts_mastery_state_v2', JSON.stringify(cleanState));
-                localStorage.removeItem('ielts_v59_writing_drafts');
-              } catch {}
-              appState = loadState();
-              isRestoringFromCloud = false;
+                await fbDb.collection('users').doc(currentUser.uid).set(cleanPayload);
+                pushed = true;
+                isRestoringFromCloud = true;
+                try {
+                  localStorage.setItem('ielts_mastery_state_v2', JSON.stringify(cleanState));
+                  localStorage.removeItem('ielts_v59_writing_drafts');
+                  localStorage.removeItem('ielts_focus_mode_v60');
+                  safeWriteLocalSyncMeta(currentUser.uid, now);
+                } catch {}
+                appState = loadState();
+                const tStr = new Date(now).toLocaleTimeString('vi-VN');
+                if (lastSyncEl) lastSyncEl.textContent = `Đã lưu lên Cloud lúc ${tStr}.`;
+                setSyncStatus('synced', 'Đã đồng bộ');
+              } catch (pushErr) {
+                pushed = false;
+                setSyncStatus('error', 'Lỗi đồng bộ');
+              }
+            } else {
+              pushed = await pushProgressToCloud(true);
             }
-            const pushed = await pushProgressToCloud(true);
             if (typeof showToast === 'function') {
               if (pushed) {
                 showToast(`Đã tạo tài khoản @${uname} và lưu tiến độ lên Cloud!`, 'success');
@@ -26982,12 +27150,13 @@ const GRAMMAR_PROOFREADING_LAB = [
         const draftsObj = u.writingDrafts || {};
         const draftKeys = Object.keys(draftsObj).filter(k => draftsObj[k]);
 
+        const fmtBandCell = (v) => (v == null || v === '') ? '—' : escapeHtml(String(v));
         const mockHtml = mocks.length
-          ? `<ul class="space-y-1">${mocks.slice(-5).reverse().map(m => `<li class="flex justify-between gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200"><span>${escapeHtml(m.title || m.mockId || 'Full Mock')}</span><span class="font-bold text-indigo-700">${escapeHtml(String(m.band ?? m.overall ?? m.score ?? '—'))}</span></li>`).join('')}</ul>`
+          ? `<ul class="space-y-1">${mocks.slice(0, 5).map(m => `<li class="flex justify-between gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200"><span>${escapeHtml(m.testName || m.title || m.mockId || 'Full Mock')}</span><span class="font-bold text-indigo-700">${escapeHtml(String(m.overall ?? m.band ?? m.score ?? '—'))}</span></li>`).join('')}</ul>`
           : '<p class="text-slate-400 italic">Chưa làm Full Mock Test.</p>';
 
         const diagHtml = diags.length
-          ? `<p class="text-slate-700">Đã làm <strong>${diags.length}</strong> bài đánh giá đầu vào — gần nhất: <strong>${escapeHtml(String(diags[diags.length - 1].band || diags[diags.length - 1].overall || '—'))}</strong>.</p>`
+          ? `<p class="text-slate-700">Đã làm <strong>${diags.length}</strong> bài đánh giá đầu vào — gần nhất: <strong>${escapeHtml(String(diags[0].overall ?? diags[0].band ?? '—'))}</strong>.</p>`
           : '<p class="text-slate-400 italic">Chưa làm bài Diagnostic đầu vào.</p>';
 
         detailContent.innerHTML = `
@@ -26995,10 +27164,10 @@ const GRAMMAR_PROOFREADING_LAB = [
             <div class="bg-white rounded-xl border border-slate-200 p-3 space-y-1.5">
               <p class="font-extrabold text-slate-800">Điểm Band (Hiện tại → Mục tiêu)</p>
               <div class="grid grid-cols-2 gap-1.5 text-[11px]">
-                <div class="px-2 py-1 rounded bg-slate-50">Listening: <strong>${cb.L ?? '—'}</strong> → ${tb.L ?? '—'}</div>
-                <div class="px-2 py-1 rounded bg-slate-50">Reading: <strong>${cb.R ?? '—'}</strong> → ${tb.R ?? '—'}</div>
-                <div class="px-2 py-1 rounded bg-slate-50">Writing: <strong>${cb.W ?? '—'}</strong> → ${tb.W ?? '—'}</div>
-                <div class="px-2 py-1 rounded bg-slate-50">Speaking: <strong>${cb.S ?? '—'}</strong> → ${tb.S ?? '—'}</div>
+                <div class="px-2 py-1 rounded bg-slate-50">Listening: <strong>${fmtBandCell(cb.L)}</strong> → ${fmtBandCell(tb.L)}</div>
+                <div class="px-2 py-1 rounded bg-slate-50">Reading: <strong>${fmtBandCell(cb.R)}</strong> → ${fmtBandCell(tb.R)}</div>
+                <div class="px-2 py-1 rounded bg-slate-50">Writing: <strong>${fmtBandCell(cb.W)}</strong> → ${fmtBandCell(tb.W)}</div>
+                <div class="px-2 py-1 rounded bg-slate-50">Speaking: <strong>${fmtBandCell(cb.S)}</strong> → ${fmtBandCell(tb.S)}</div>
               </div>
               <p class="text-[11px] text-slate-500 pt-1">UID: <code class="bg-slate-100 px-1 rounded">${escapeHtml(u.uid)}</code></p>
             </div>
@@ -27093,6 +27262,8 @@ const GRAMMAR_PROOFREADING_LAB = [
 
         try {
           const snap = await db.collection('users').get();
+          const todayStr = typeof getLocalDateStr === 'function' ? getLocalDateStr() : new Date().toISOString().slice(0, 10);
+          const yesterdayStr = typeof getLocalDateStr === 'function' ? getLocalDateStr(new Date(Date.now() - 86400000)) : new Date(Date.now() - 86400000).toISOString().slice(0, 10);
           const list = [];
           snap.forEach((doc) => {
             const d = doc.data() || {};
@@ -27100,14 +27271,17 @@ const GRAMMAR_PROOFREADING_LAB = [
             const errs = Array.isArray(st.errorLog) ? st.errorLog : [];
             const streakObj = st.streak || {};
             const dailyObj = st.dailyXp || {};
+            const activeDailyXp = (String(dailyObj.date || '') === todayStr) ? Math.max(0, Number(dailyObj.xp || 0)) : 0;
+            const lastStudy = String(streakObj.lastStudyDate || '');
+            const activeStreak = (lastStudy === todayStr || lastStudy === yesterdayStr) ? Math.max(0, Number(streakObj.count || 0)) : 0;
             list.push({
               uid: doc.id,
               username: String(d.username || doc.id.slice(0, 8)),
               learnerName: String(st.learnerName || 'Học viên khách'),
               updatedAt: Number(d.updatedAt || 0),
               xp: Number(st.xp || 0),
-              dailyXp: Number(dailyObj.xp || 0),
-              streak: Number(streakObj.count || 0),
+              dailyXp: activeDailyXp,
+              streak: activeStreak,
               bestStreak: Number(streakObj.best || 0),
               curOverall: calcOverall(st.currentBands),
               tgtOverall: calcOverall(st.targetBands),
@@ -27208,7 +27382,7 @@ const GRAMMAR_PROOFREADING_LAB = [
         a.href = url;
         a.download = `ielts-cloud-learners-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
         if (typeof showToast === 'function') showToast('Đã xuất danh sách tiến độ học viên ra CSV!', 'success');
       });
 
